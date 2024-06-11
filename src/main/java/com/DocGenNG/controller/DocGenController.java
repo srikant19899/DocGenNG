@@ -15,6 +15,18 @@ public class DocGenController {
     @Autowired
     private DocGenNgServiceImpl excelService;
 
+       /*
+        step 1: change this service to asych
+        step 2: once the request comes in - the service should return the ticket , another thread to process the request
+        Step 3: return the ticket from service class even if there is any exception
+        step 4: in service class write a method to call QuoteX service ( for now hardcode it as - it should return a template details )
+        step 5: in resource folder add the master template and use that template and raw data excel file to create a new template ( sales / other )
+        step 6: in service write a method that will hold the business logic to map the raw data to excel file using the mastet template
+        NOTE: Business logic --> Create a copy of master template, copy thr values from raw excel to the newly created excel file - refer poc code
+        Step 7: once the raw data is mapped in the newly created excel then --> you will make a call to a new method that will call the db and store the ticket number and is_ready flag as true
+        Step 8: the created excel sheet to be moved to server path --. write a nethod for this and once we move it then we need to store the path in redis/db for the retrive service to use the path
+        Step 9: Exception handling to be solid across the application.
+         */
 
     @PostMapping("/documents")
     public ResponseEntity<String> submit(@RequestParam("file") MultipartFile file, DocumentsRequest request) {
