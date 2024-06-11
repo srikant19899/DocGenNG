@@ -1,6 +1,7 @@
 package com.DocGenNG.controller;
 
 import com.DocGenNG.model.request.DocumentsRequest;
+import com.DocGenNG.service.DocGenNgService;
 import com.DocGenNG.serviceImpl.DocGenNgServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -8,12 +9,18 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 @RestController
 public class DocGenController {
 
+    private final DocGenNgService docGenNgService;
+
     @Autowired
-    private DocGenNgServiceImpl excelService;
+    public DocGenController(DocGenNgService docGenNgService) {
+        this.docGenNgService = docGenNgService;
+    }
 
        /*
         step 1: change this service to asych
@@ -31,15 +38,17 @@ public class DocGenController {
     @PostMapping("/documents")
     public ResponseEntity<String> submit(@RequestParam("file") MultipartFile file, DocumentsRequest request) {
         try {
-            String fileId = excelService.processFile(file,request);
-            return ResponseEntity.ok("File submitted successfully. File ID: "                             + fileId);
+            String futureFileId = docGenNgService.processFile(file,request);
+            return ResponseEntity.ok("File submitted successfully. File ID: "+ futureFileId);
         } catch (IOException e) {
             return ResponseEntity.status(500).body("Error processing file: " + e.getMessage());
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
     @GetMapping("/documents/jobs/")
     public ResponseEntity<Boolean> isReady(@RequestParam("jobId") String jobId) {
-        boolean isReady= excelService.isFileReady(jobId);
+        boolean isReady= docGenNgService.isFileReady(jobId);
         return ResponseEntity.ok(isReady);
     }
 
@@ -47,7 +56,7 @@ public class DocGenController {
     @GetMapping("/templates/")
     public ResponseEntity<byte[]> retrieve(@RequestParam("Id") String Id) {
         try {
-            byte[] fileData = excelService.getFile(Id);
+            byte[] fileData = docGenNgService.getFile(Id);
             return ResponseEntity.ok()
                     .header("Content-Disposition", "attachment; filename=" + Id + ".xlsx")
                     .body(fileData);
