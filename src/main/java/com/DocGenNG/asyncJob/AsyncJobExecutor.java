@@ -26,6 +26,7 @@ public class AsyncJobExecutor {
     }
 
     public void shutdown() {
+        System.out.println("kill by main thread !!!");
         executor.shutdown();
     }
 }

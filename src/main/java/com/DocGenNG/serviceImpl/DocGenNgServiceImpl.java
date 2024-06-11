@@ -48,7 +48,6 @@ public class DocGenNgServiceImpl implements DocGenNgService {
         asyncJobExecutor.executeAsyncJob(() -> {
             Path filePath = directory.resolve(fileId + ".xlsx");
             try (OutputStream os = Files.newOutputStream(filePath)) {
-                // Simulate a delay
                 try {
                     Thread.sleep(15000);
                 } catch (InterruptedException e) {
@@ -69,7 +68,6 @@ public class DocGenNgServiceImpl implements DocGenNgService {
             }
             System.out.println("Task complete for file: " + fileId);
         });
-        asyncJobExecutor.shutdown();
 
         // Return fileId immediately
         return fileId;
