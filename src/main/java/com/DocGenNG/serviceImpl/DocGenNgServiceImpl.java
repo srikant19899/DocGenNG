@@ -3,6 +3,7 @@ package com.DocGenNG.serviceImpl;
 import com.DocGenNG.asyncJob.AsyncJobExecutor;
 import com.DocGenNG.model.request.DocumentsRequest;
 import com.DocGenNG.service.DocGenNgService;
+import com.DocGenNG.utility.DocGenUtility;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.scheduling.annotation.Async;
@@ -17,54 +18,62 @@ import java.nio.file.Paths;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Service
 public class DocGenNgServiceImpl implements DocGenNgService {
     private static final String FILE_DIRECTORY = "processed_files/";
     AsyncJobExecutor asyncJobExecutor = new AsyncJobExecutor();
+    DocGenUtility docGenUtility = new DocGenUtility();
+    private final ExecutorService executor = Executors.newFixedThreadPool(10); // Adjust the pool size as needed
 
-    @Async
-    public String processFile(MultipartFile file, DocumentsRequest request) throws IOException, InterruptedException {
+
+
+    public String processFile(MultipartFile file, DocumentsRequest request) throws IOException {
         // Create directory if not exists
-        Path directory = Paths.get(FILE_DIRECTORY);
+        Path directory = Paths.get(FILE_DIRECTORY, request.getQuoteId());
         if (!Files.exists(directory)) {
-            Files.createDirectories(directory);
+            try {
+                Files.createDirectories(directory);
+            } catch (IOException e) {
+                throw new RuntimeException("Error creating directory: " + directory, e);
+            }
         }
-        String fileId = UUID.randomUUID().toString();
+
+        // Generate file ID
+        String fileId = docGenUtility.docNameCreator(request.getQuoteId());
 
         // Save file to disk asynchronously
         asyncJobExecutor.executeAsyncJob(() -> {
-            try {
-                // Save file to disk
-                Path filePath = directory.resolve(fileId + ".xlsx");
-                try (OutputStream os = Files.newOutputStream(filePath)) {
-                    Thread.sleep(10000);
-                    os.write(file.getBytes());
+            Path filePath = directory.resolve(fileId + ".xlsx");
+            try (OutputStream os = Files.newOutputStream(filePath)) {
+                // Simulate a delay
+                try {
+                    Thread.sleep(15000);
                 } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                     throw new RuntimeException(e);
                 }
+                os.write(file.getBytes());
 
-                // Perform any additional processing if needed (e.g., creating a workbook)
+                // Additional processing if needed (e.g., creating a workbook)
                 try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
                     // Example: Just saving the workbook back
-                    try (OutputStream os = Files.newOutputStream(filePath)) {
-                        workbook.write(os);
+                    try (OutputStream os2 = Files.newOutputStream(filePath)) {
+                        workbook.write(os2);
                     }
                 }
-
-
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new RuntimeException("Error saving file: " + filePath, e);
             }
+            System.out.println("Task complete for file: " + fileId);
         });
         asyncJobExecutor.shutdown();
 
-        // Simulate a delay here if needed
-//         Thread.sleep(5000);
-
+        // Return fileId immediately
         return fileId;
     }
-
 
     public boolean isFileReady(String fileId) {
         // Check if the file exists

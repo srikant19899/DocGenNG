@@ -38,8 +38,8 @@ public class DocGenController {
     @PostMapping("/documents")
     public ResponseEntity<String> submit(@RequestParam("file") MultipartFile file, DocumentsRequest request) {
         try {
-            String futureFileId = docGenNgService.processFile(file,request);
-            return ResponseEntity.ok("File submitted successfully. File ID: "+ futureFileId);
+            String fileId = docGenNgService.processFile(file, request);
+            return ResponseEntity.ok("File submitted successfully. File ID: " + fileId);
         } catch (IOException e) {
             return ResponseEntity.status(500).body("Error processing file: " + e.getMessage());
         } catch (InterruptedException e) {
