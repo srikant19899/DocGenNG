@@ -1,6 +1,6 @@
 package com.DocGenNG.serviceImpl;
 
-import com.DocGenNG.asyncJob.AsyncJobExecutor;
+
 import com.DocGenNG.model.request.DocumentsRequest;
 import com.DocGenNG.service.DocGenNgService;
 import com.DocGenNG.utility.DocGenUtility;
@@ -24,13 +24,12 @@ import java.util.concurrent.Executors;
 @Service
 public class DocGenNgServiceImpl implements DocGenNgService {
     private static final String FILE_DIRECTORY = "processed_files/";
-    AsyncJobExecutor asyncJobExecutor = new AsyncJobExecutor();
     DocGenUtility docGenUtility = new DocGenUtility();
     private final ExecutorService executor = Executors.newFixedThreadPool(10); // Adjust the pool size as needed
 
 
 
-    public String processFile(MultipartFile file, DocumentsRequest request) throws IOException {
+    public String processFile(MultipartFile file, DocumentsRequest request) throws IOException, InterruptedException {
         // Create directory if not exists
         Path directory = Paths.get(FILE_DIRECTORY, request.getQuoteId());
         if (!Files.exists(directory)) {
@@ -45,9 +44,17 @@ public class DocGenNgServiceImpl implements DocGenNgService {
         String fileId = docGenUtility.docNameCreator(request.getQuoteId());
 
         // Save file to disk asynchronously
-        asyncJobExecutor.executeAsyncJob(() -> {
+        generateFile(directory, fileId, file, request);
+
+        // Return fileId immediately
+        return fileId;
+    }
+    @Async
+    public CompletableFuture<Void> generateFile(Path directory, String fileId, MultipartFile file, DocumentsRequest request) {
+        return CompletableFuture.runAsync(() -> {
             Path filePath = directory.resolve(fileId + ".xlsx");
             try (OutputStream os = Files.newOutputStream(filePath)) {
+                // Simulate a delay
                 try {
                     Thread.sleep(15000);
                 } catch (InterruptedException e) {
@@ -63,16 +70,19 @@ public class DocGenNgServiceImpl implements DocGenNgService {
                         workbook.write(os2);
                     }
                 }
+                System.out.println("Task complete for file: " + fileId);
             } catch (IOException e) {
                 throw new RuntimeException("Error saving file: " + filePath, e);
             }
-            System.out.println("Task complete for file: " + fileId);
+//            this for testing code
+            try {
+                Thread.sleep(10000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            System.out.println("test run !!!");
         });
-
-        // Return fileId immediately
-        return fileId;
     }
-
     public boolean isFileReady(String fileId) {
         // Check if the file exists
         Path filePath = Paths.get(FILE_DIRECTORY, fileId + ".xlsx");
