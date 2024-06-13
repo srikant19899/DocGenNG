@@ -1,8 +1,11 @@
 package com.DocGenNG.utility;
 
+import org.springframework.stereotype.Component;
+
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+@Component
 public class DocGenUtility {
     public String docNameCreator(String quoteId){
         LocalDateTime localDateTime = LocalDateTime.now();

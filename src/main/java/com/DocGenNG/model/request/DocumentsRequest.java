@@ -1,19 +1,18 @@
 package com.DocGenNG.model.request;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.*;
 
 @Data
-@ToString
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 public class DocumentsRequest {
-
+    @JsonProperty("quoteId")
     private String quoteId;
+
+    @JsonProperty("docType")
     private String docType;
+
+    @JsonProperty("template")
     private String template;
-
-
 }

@@ -6,6 +6,8 @@ import com.DocGenNG.service.DocGenNgService;
 import com.DocGenNG.utility.DocGenUtility;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,36 +25,49 @@ import java.util.concurrent.Executors;
 
 @Service
 public class DocGenNgServiceImpl implements DocGenNgService {
+    private static final Logger logger = LoggerFactory.getLogger(DocGenNgServiceImpl.class);
+
     private static final String FILE_DIRECTORY = "processed_files/";
-    DocGenUtility docGenUtility = new DocGenUtility();
-    private final ExecutorService executor = Executors.newFixedThreadPool(10); // Adjust the pool size as needed
+    private final DocGenUtility docGenUtility;
 
-
-
-    public String processFile(MultipartFile file, DocumentsRequest request) throws IOException, InterruptedException {
+    public DocGenNgServiceImpl(DocGenUtility docGenUtility) {
+        this.docGenUtility = docGenUtility;
+    }
+    public String processFile(String requestId,String trace, DocumentsRequest request) throws IOException, InterruptedException {
         // Create directory if not exists
-        Path directory = Paths.get(FILE_DIRECTORY, request.getQuoteId());
+        String quoteId = request.getQuoteId();
+
+        if (FILE_DIRECTORY == null || FILE_DIRECTORY.isEmpty()) {
+            throw new IllegalArgumentException("FILE_DIRECTORY is null or empty");
+        }
+
+        if (quoteId == null || quoteId.isEmpty()) {
+            throw new IllegalArgumentException("Quote ID is null or empty");
+        }
+
+        Path directory = Paths.get(FILE_DIRECTORY, quoteId);
+
         if (!Files.exists(directory)) {
             try {
                 Files.createDirectories(directory);
+                logger.info("Directory created: {}", directory);
             } catch (IOException e) {
+                logger.error("Error creating directory: {}", directory, e);
                 throw new RuntimeException("Error creating directory: " + directory, e);
             }
         }
-
         // Generate file ID
         String fileId = docGenUtility.docNameCreator(request.getQuoteId());
-
         // Save file to disk asynchronously
-        generateFile(directory, fileId, file, request);
+        generateFile(directory, fileId, requestId, request);
 
         // Return fileId immediately
         return fileId;
     }
     @Async
-    public CompletableFuture<Void> generateFile(Path directory, String fileId, MultipartFile file, DocumentsRequest request) {
+    public CompletableFuture<Void> generateFile(Path directory, String fileId, String requestId, DocumentsRequest request) {
         return CompletableFuture.runAsync(() -> {
-            Path filePath = directory.resolve(fileId + ".xlsx");
+           /* Path filePath = directory.resolve(fileId + ".xlsx");
             try (OutputStream os = Files.newOutputStream(filePath)) {
                 // Simulate a delay
                 try {
@@ -73,7 +88,7 @@ public class DocGenNgServiceImpl implements DocGenNgService {
                 System.out.println("Task complete for file: " + fileId);
             } catch (IOException e) {
                 throw new RuntimeException("Error saving file: " + filePath, e);
-            }
+            }*/
 //            this for testing code
             try {
                 Thread.sleep(10000);
