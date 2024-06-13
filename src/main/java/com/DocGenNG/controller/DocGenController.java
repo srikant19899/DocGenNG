@@ -9,9 +9,11 @@ import com.DocGenNG.service.DocGenNgService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +25,8 @@ import java.io.IOException;
 public class DocGenController {
 
     private final DocGenNgService docGenNgService;
+    private static final Logger logger = LoggerFactory.getLogger(DocGenController.class);
+
 
     @Autowired
     public DocGenController(DocGenNgService docGenNgService) {
@@ -58,17 +62,23 @@ public class DocGenController {
                     content = @Content(schema = @Schema(implementation = DocumentsErrorResponse.class), mediaType = "application/json"))
     })
     @PostMapping("/documents")
-    public ResponseEntity<Object> submit(@RequestBody DocumentsRequest request,
-                                         @RequestHeader(name = "requestId", required = true) String requestId,
+    public ResponseEntity<Object> submit( @Valid @RequestBody DocumentsRequest request,
+                                         @RequestHeader(name = "requestId") String requestId,
                                          @RequestHeader(name = "trace", required = false) String trace) {
+        logger.info("Received requestId: {}", requestId);
+        logger.info("Received trace: {}", trace);
+        logger.info("Received request: {}", request);
         try {
             String fileId = docGenNgService.processFile(requestId, trace, request);
-            return ResponseEntity.status(HttpStatus.ACCEPTED).body(new DocumentsResponse(fileId));
+            return ResponseEntity.status(HttpStatus.OK).body(new DocumentsResponse(fileId));
         }  catch (InvalidInputException e) {
+            logger.error("InvalidInputException occurred: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new DocumentsErrorResponse(new Errors("400", e.getMessage()), ""));
         }catch (IOException e) {
+            logger.error("IOException occurred: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new DocumentsErrorResponse(new Errors("500", e.getMessage()), ""));
         } catch (InterruptedException e) {
+            logger.error("InterruptedException occurred: {}", e.getMessage());
             throw new RuntimeException(e);
         }
 

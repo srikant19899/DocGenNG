@@ -1,18 +1,20 @@
 package com.DocGenNG.model.request;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.*;
+import jakarta.validation.constraints.NotEmpty;
+import lombok.Data;
+
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class DocumentsRequest {
-    @JsonProperty("quoteId")
+
+    @NotEmpty(message = "user name is required")
     private String quoteId;
 
-    @JsonProperty("docType")
+
+    @NotEmpty(message = "user name is required")
     private String docType;
 
-    @JsonProperty("template")
+
+    @NotEmpty(message = "user name is required")
     private String template;
 }
