@@ -9,7 +9,7 @@ import java.util.concurrent.CompletableFuture;
 
 public interface DocGenNgService {
 
-    public String processFile(MultipartFile file, DocumentsRequest request) throws IOException, InterruptedException;
+    public String processFile(String requestId,String trace, DocumentsRequest request) throws IOException, InterruptedException;
     public boolean isFileReady(String fileId);
     public byte[] getFile(String fileId) throws IOException;
 

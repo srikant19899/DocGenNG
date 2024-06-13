@@ -1,21 +1,32 @@
 package com.DocGenNG.controller;
 
+import com.DocGenNG.exceptionHandler.InvalidInputException;
 import com.DocGenNG.model.request.DocumentsRequest;
+import com.DocGenNG.model.response.DocumentsErrorResponse;
+import com.DocGenNG.model.response.DocumentsResponse;
+import com.DocGenNG.model.response.Errors;
 import com.DocGenNG.service.DocGenNgService;
-import com.DocGenNG.serviceImpl.DocGenNgServiceImpl;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+
 
 @RestController
 public class DocGenController {
 
     private final DocGenNgService docGenNgService;
+    private static final Logger logger = LoggerFactory.getLogger(DocGenController.class);
+
 
     @Autowired
     public DocGenController(DocGenNgService docGenNgService) {
@@ -35,20 +46,47 @@ public class DocGenController {
         Step 9: Exception handling to be solid across the application.
          */
 
+    @Operation(summary = "Initiates the process of generating a document", description = "This operation validates the data in the request and starts the generation of the document defined by the arguments")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Quote matching is submitted; the returned ticket can be used to check status",
+                    content = @Content(schema = @Schema(implementation = DocumentsResponse.class), mediaType = "application/json")),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid input parameters",
+                    content = @Content(schema = @Schema(implementation = DocumentsErrorResponse.class),mediaType = "application/json")),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Internal error",
+                    content = @Content(schema = @Schema(implementation = DocumentsErrorResponse.class), mediaType = "application/json"))
+    })
     @PostMapping("/documents")
-    public ResponseEntity<String> submit(@RequestParam("file") MultipartFile file, DocumentsRequest request) {
+    public ResponseEntity<Object> submit( @Valid @RequestBody DocumentsRequest request,
+                                         @RequestHeader(name = "requestId") String requestId,
+                                         @RequestHeader(name = "trace", required = false) String trace) {
+        logger.info("Received requestId: {}", requestId);
+        logger.info("Received trace: {}", trace);
+        logger.info("Received request: {}", request);
         try {
-            String fileId = docGenNgService.processFile(file, request);
-            return ResponseEntity.ok("File submitted successfully. File ID: " + fileId);
-        } catch (IOException e) {
-            return ResponseEntity.status(500).body("Error processing file: " + e.getMessage());
+            String fileId = docGenNgService.processFile(requestId, trace, request);
+            return ResponseEntity.status(HttpStatus.OK).body(new DocumentsResponse(fileId));
+        }  catch (InvalidInputException e) {
+            logger.error("InvalidInputException occurred: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new DocumentsErrorResponse(new Errors("400", e.getMessage()), ""));
+        }catch (IOException e) {
+            logger.error("IOException occurred: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new DocumentsErrorResponse(new Errors("500", e.getMessage()), ""));
         } catch (InterruptedException e) {
+            logger.error("InterruptedException occurred: {}", e.getMessage());
             throw new RuntimeException(e);
         }
+
     }
+
     @GetMapping("/documents/jobs/")
     public ResponseEntity<Boolean> isReady(@RequestParam("jobId") String jobId) {
-        boolean isReady= docGenNgService.isFileReady(jobId);
+        boolean isReady = docGenNgService.isFileReady(jobId);
         return ResponseEntity.ok(isReady);
     }
 

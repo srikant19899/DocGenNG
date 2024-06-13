@@ -1,19 +1,20 @@
 package com.DocGenNG.model.request;
 
-import lombok.AllArgsConstructor;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+
 
 @Data
-@ToString
-@AllArgsConstructor
-@NoArgsConstructor
 public class DocumentsRequest {
 
+    @NotEmpty(message = "user name is required")
     private String quoteId;
+
+
+    @NotEmpty(message = "user name is required")
     private String docType;
+
+
+    @NotEmpty(message = "user name is required")
     private String template;
-
-
 }
