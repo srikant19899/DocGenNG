@@ -41,9 +41,7 @@ public class DocGenNgServiceImpl implements DocGenNgService {
             throw new IllegalArgumentException("FILE_DIRECTORY is null or empty");
         }
 
-        if (quoteId == null || quoteId.isEmpty()) {
-            throw new IllegalArgumentException("Quote ID is null or empty");
-        }
+
 
         Path directory = Paths.get(FILE_DIRECTORY, quoteId);
 
@@ -56,6 +54,7 @@ public class DocGenNgServiceImpl implements DocGenNgService {
                 throw new RuntimeException("Error creating directory: " + directory, e);
             }
         }
+
         // Generate file ID
         String fileId = docGenUtility.docNameCreator(request.getQuoteId());
         // Save file to disk asynchronously
