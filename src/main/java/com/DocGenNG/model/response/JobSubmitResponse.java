@@ -10,7 +10,7 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class DocumentsErrorResponse {
+public class JobSubmitResponse {
     public List<Errors> errors;
     public String ticket;
 }

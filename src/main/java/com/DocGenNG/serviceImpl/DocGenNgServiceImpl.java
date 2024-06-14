@@ -1,27 +1,19 @@
 package com.DocGenNG.serviceImpl;
 
 
-import com.DocGenNG.model.request.DocumentsRequest;
+import com.DocGenNG.model.request.DocGenData;
 import com.DocGenNG.service.DocGenNgService;
 import com.DocGenNG.utility.DocGenUtility;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 @Service
 public class DocGenNgServiceImpl implements DocGenNgService {
@@ -33,7 +25,7 @@ public class DocGenNgServiceImpl implements DocGenNgService {
     public DocGenNgServiceImpl(DocGenUtility docGenUtility) {
         this.docGenUtility = docGenUtility;
     }
-    public String processFile(String requestId,String trace, DocumentsRequest request) throws IOException, InterruptedException {
+    public String processFile(String requestId,String trace, DocGenData request) throws IOException, InterruptedException {
         // Create directory if not exists
         String quoteId = request.getQuoteId();
 
@@ -64,7 +56,7 @@ public class DocGenNgServiceImpl implements DocGenNgService {
         return fileId;
     }
     @Async
-    public CompletableFuture<Void> generateFile(Path directory, String fileId, String requestId, DocumentsRequest request) {
+    public CompletableFuture<Void> generateFile(Path directory, String fileId, String requestId, DocGenData request) {
         return CompletableFuture.runAsync(() -> {
            /* Path filePath = directory.resolve(fileId + ".xlsx");
             try (OutputStream os = Files.newOutputStream(filePath)) {

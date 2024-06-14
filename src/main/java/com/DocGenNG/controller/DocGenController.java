@@ -1,16 +1,18 @@
 package com.DocGenNG.controller;
 
 import com.DocGenNG.exception.InvalidInputException;
-import com.DocGenNG.model.request.DocumentsRequest;
-import com.DocGenNG.model.response.DocumentsErrorResponse;
+import com.DocGenNG.model.request.DocGenData;
+import com.DocGenNG.model.response.JobSubmitResponse;
 import com.DocGenNG.model.response.DocumentsResponse;
 import com.DocGenNG.model.response.Errors;
 import com.DocGenNG.service.DocGenNgService;
+import io.swagger.annotations.Api;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -24,6 +26,7 @@ import java.util.Arrays;
 
 
 @RestController
+@Tag(name = "DocGenController")
 public class DocGenController {
 
     private final DocGenNgService docGenNgService;
@@ -41,10 +44,10 @@ public class DocGenController {
         Step 3: return the ticket from service class even if there is any exception
         step 4: in service class write a method to call QuoteX service ( for now hardcode it as - it should return a template details )
         step 5: in resource folder add the master template and use that template and raw data excel file to create a new template ( sales / other )
-        step 6: in service write a method that will hold the business logic to map the raw data to excel file using the mastet template
+        step 6: in service write a method that will hold the business logic to map the raw data to excel file using the master template
         NOTE: Business logic --> Create a copy of master template, copy thr values from raw excel to the newly created excel file - refer poc code
         Step 7: once the raw data is mapped in the newly created excel then --> you will make a call to a new method that will call the db and store the ticket number and is_ready flag as true
-        Step 8: the created excel sheet to be moved to server path --. write a nethod for this and once we move it then we need to store the path in redis/db for the retrive service to use the path
+        Step 8: the created excel sheet to be moved to server path --. write a method for this and once we move it then we need to store the path in redis/db for the retrieve service to use the path
         Step 9: Exception handling to be solid across the application.
         schema => requestId, is_ready, tkt_no
          */
@@ -58,17 +61,19 @@ public class DocGenController {
             @ApiResponse(
                     responseCode = "400",
                     description = "Invalid input parameters",
-                    content = @Content(schema = @Schema(implementation = DocumentsErrorResponse.class),mediaType = "application/json")),
+                    content = @Content(schema = @Schema(implementation = JobSubmitResponse.class),mediaType = "application/json")),
             @ApiResponse(
                     responseCode = "500",
                     description = "Internal error",
-                    content = @Content(schema = @Schema(implementation = DocumentsErrorResponse.class), mediaType = "application/json"))
+                    content = @Content(schema = @Schema(implementation = JobSubmitResponse.class), mediaType = "application/json"))
     })
     @PostMapping("/documents")
-    public ResponseEntity<Object> submit( @Valid @RequestBody DocumentsRequest request,
-                                          HttpServletRequest servletRequest) {
+    public ResponseEntity<Object> submit( @Valid @RequestBody DocGenData request,
+                                          @RequestHeader(name = "requestId") String requestId,
+                                          @RequestHeader(name = "trace", required = false) String trace) {
+        /*HttpServletRequest servletRequest
         String trace = servletRequest.getHeader("trace");
-        String requestId = servletRequest.getHeader("requestId");
+        String requestId = servletRequest.getHeader("requestId");*/
         logger.info("Received requestId: {}", requestId);
         logger.info("Received trace: {}", trace);
         logger.info("Received request: {}", request);
@@ -80,12 +85,12 @@ public class DocGenController {
             throw new InvalidInputException("InvalidInputException occurred: " + e.getMessage());
         }catch (Exception e) {
             logger.error("IOException occurred: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new DocumentsErrorResponse(Arrays.asList(new Errors("500", e.getMessage())), ""));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new JobSubmitResponse(Arrays.asList(new Errors("500", e.getMessage())), ""));
         }
 
     }
 
-    @GetMapping("/documents/jobs/")
+    @GetMapping("/documents/jobs/{jobId}")
     public ResponseEntity<Boolean> isReady(@RequestParam("jobId") String jobId) {
         boolean isReady = docGenNgService.isFileReady(jobId);
         return ResponseEntity.ok(isReady);

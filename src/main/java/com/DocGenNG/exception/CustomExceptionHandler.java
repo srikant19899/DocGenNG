@@ -1,7 +1,7 @@
 package com.DocGenNG.exception;
 
 
-import com.DocGenNG.model.response.DocumentsErrorResponse;
+import com.DocGenNG.model.response.JobSubmitResponse;
 import com.DocGenNG.model.response.Errors;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,8 +14,8 @@ import  java.util.Arrays;
 @ControllerAdvice
 public class CustomExceptionHandler {
     @ExceptionHandler(InvalidInputException.class)
-    public ResponseEntity<DocumentsErrorResponse> handleInvalidInputException(InvalidInputException e) {
-        DocumentsErrorResponse errorResponse = new DocumentsErrorResponse(
+    public ResponseEntity<JobSubmitResponse> handleInvalidInputException(InvalidInputException e) {
+        JobSubmitResponse errorResponse = new JobSubmitResponse(
                 Arrays.asList(new Errors("400", e.getMessage())),
                 ""
         );
@@ -23,9 +23,9 @@ public class CustomExceptionHandler {
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<DocumentsErrorResponse> handleValidationExceptions(MethodArgumentNotValidException e) {
+    public ResponseEntity<JobSubmitResponse> handleValidationExceptions(MethodArgumentNotValidException e) {
         String errorMessage = e.getBindingResult().getFieldError().getDefaultMessage();
-        DocumentsErrorResponse errorResponse = new DocumentsErrorResponse(
+        JobSubmitResponse errorResponse = new JobSubmitResponse(
                 Arrays.asList(new Errors("400", errorMessage)),
                 ""
         );
@@ -33,8 +33,8 @@ public class CustomExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<DocumentsErrorResponse> handleException(Exception e) {
-        DocumentsErrorResponse errorResponse = new DocumentsErrorResponse(
+    public ResponseEntity<JobSubmitResponse> handleException(Exception e) {
+        JobSubmitResponse errorResponse = new JobSubmitResponse(
                 Arrays.asList(new Errors("500", e.getMessage())),
                 ""
         );
