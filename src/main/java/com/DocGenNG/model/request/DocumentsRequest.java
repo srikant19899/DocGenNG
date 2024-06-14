@@ -7,14 +7,14 @@ import lombok.Data;
 @Data
 public class DocumentsRequest {
 
-    @NotEmpty(message = "user name is required")
+    @NotEmpty(message = "quoteId is required")
     private String quoteId;
 
 
-    @NotEmpty(message = "user name is required")
+    @NotEmpty(message = "docType is required")
     private String docType;
 
 
-    @NotEmpty(message = "user name is required")
+    @NotEmpty(message = "template is required")
     private String template;
 }

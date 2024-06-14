@@ -1,6 +1,6 @@
 package com.DocGenNG.controller;
 
-import com.DocGenNG.exceptionHandler.InvalidInputException;
+import com.DocGenNG.exception.InvalidInputException;
 import com.DocGenNG.model.request.DocumentsRequest;
 import com.DocGenNG.model.response.DocumentsErrorResponse;
 import com.DocGenNG.model.response.DocumentsResponse;
@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
+import java.util.Arrays;
 
 
 @RestController
@@ -44,6 +46,7 @@ public class DocGenController {
         Step 7: once the raw data is mapped in the newly created excel then --> you will make a call to a new method that will call the db and store the ticket number and is_ready flag as true
         Step 8: the created excel sheet to be moved to server path --. write a nethod for this and once we move it then we need to store the path in redis/db for the retrive service to use the path
         Step 9: Exception handling to be solid across the application.
+        schema => requestId, is_ready, tkt_no
          */
 
     @Operation(summary = "Initiates the process of generating a document", description = "This operation validates the data in the request and starts the generation of the document defined by the arguments")
@@ -63,23 +66,21 @@ public class DocGenController {
     })
     @PostMapping("/documents")
     public ResponseEntity<Object> submit( @Valid @RequestBody DocumentsRequest request,
-                                         @RequestHeader(name = "requestId") String requestId,
-                                         @RequestHeader(name = "trace", required = false) String trace) {
+                                          HttpServletRequest servletRequest) {
+        String trace = servletRequest.getHeader("trace");
+        String requestId = servletRequest.getHeader("requestId");
         logger.info("Received requestId: {}", requestId);
         logger.info("Received trace: {}", trace);
         logger.info("Received request: {}", request);
         try {
             String fileId = docGenNgService.processFile(requestId, trace, request);
             return ResponseEntity.status(HttpStatus.OK).body(new DocumentsResponse(fileId));
-        }  catch (InvalidInputException e) {
+        }  catch (InvalidInputException | IOException | InterruptedException e) {
             logger.error("InvalidInputException occurred: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new DocumentsErrorResponse(new Errors("400", e.getMessage()), ""));
-        }catch (IOException e) {
+            throw new InvalidInputException("InvalidInputException occurred: " + e.getMessage());
+        }catch (Exception e) {
             logger.error("IOException occurred: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new DocumentsErrorResponse(new Errors("500", e.getMessage()), ""));
-        } catch (InterruptedException e) {
-            logger.error("InterruptedException occurred: {}", e.getMessage());
-            throw new RuntimeException(e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new DocumentsErrorResponse(Arrays.asList(new Errors("500", e.getMessage())), ""));
         }
 
     }
