@@ -1,6 +1,8 @@
 package com.DocGenNG.serviceImpl;
 
 
+import com.DocGenNG.exception.DocumentProcessingException;
+import com.DocGenNG.model.entity.DocGenEntity;
 import com.DocGenNG.model.request.DocGenData;
 import com.DocGenNG.service.DocGenNgService;
 import com.DocGenNG.utility.DocGenUtility;
@@ -13,6 +15,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -21,29 +25,54 @@ public class DocGenNgServiceImpl implements DocGenNgService {
 
     private static final String FILE_DIRECTORY = "processed_files/";
     private final DocGenUtility docGenUtility;
-
+    private List<DocGenEntity> dbData ;
     public DocGenNgServiceImpl(DocGenUtility docGenUtility) {
         this.docGenUtility = docGenUtility;
+        dbData= new ArrayList<>();
     }
     public String processFile(String requestId,String trace, DocGenData request) throws IOException, InterruptedException {
 
+        if (FILE_DIRECTORY == null || FILE_DIRECTORY.isEmpty()) {
+            throw new IllegalArgumentException("FILE_DIRECTORY is null or empty");
+        }
+        Path directory = Paths.get(FILE_DIRECTORY, request.getQuoteId());
+        if (!Files.exists(directory)) {
+            try {
+                Files.createDirectories(directory);
+                logger.info("Directory created: {}", directory);
+            } catch (IOException e) {
+                logger.error("Error creating directory: {}", directory, e);
+                throw new RuntimeException("Error creating directory: " + directory, e);
+            }
+        }
+
         // Generate file ID
-        String fileId = docGenUtility.docNameCreator(request.getQuoteId());
+        String ticketNumber = docGenUtility.docNameCreator(request.getQuoteId());
         // calling QuoteX service
         Object object = docGenUtility.callQuoteService();
         logger.info("QuoteX service call{}", object.toString());
+        for(DocGenEntity db: dbData){
+            if(db.getRequestId().equals(requestId))
+                throw new DocumentProcessingException("Still processing !!");
+        }
+        DocGenEntity docGenEntity = new DocGenEntity();
+        docGenEntity.setReady(false);
+        docGenEntity.setRequestId(requestId);
+        docGenEntity.setTicketNumber(ticketNumber);
+        dbData.add(docGenEntity);
+
         // call  asynchronously and do computation accordingliy
-        generateFile( fileId, requestId, request);
+        generateFile( ticketNumber, requestId, request);
 
         // Return fileId immediately
-        return fileId;
+        return ticketNumber;
     }
     @Async
     public CompletableFuture<Void> generateFile( String fileId, String requestId, DocGenData request) {
         return CompletableFuture.runAsync(() -> {
 
             try {
-                Thread.sleep(10000);
+                Thread.sleep(60000);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }

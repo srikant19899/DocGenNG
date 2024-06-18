@@ -5,10 +5,11 @@ import lombok.Data;
 @Data
 public class DocGenEntity {
 
-    private int id;
+
     private String requestId;
+    private String filePath;
     private String ticketNumber;
-    private boolean isReady;
+    private boolean isReady; // if true file is ready, false we are generating file
 
 
 }
