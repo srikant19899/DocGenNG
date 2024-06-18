@@ -60,6 +60,7 @@ public class DocGenNgServiceImpl implements DocGenNgService {
         docGenEntity.setRequestId(requestId);
         docGenEntity.setTicketNumber(ticketNumber);
         dbData.add(docGenEntity);
+        logger.info("DB status before completing file{}", dbData);
 
         // call  asynchronously and do computation accordingliy
         generateFile( ticketNumber, requestId, request);
@@ -77,6 +78,8 @@ public class DocGenNgServiceImpl implements DocGenNgService {
                 throw new RuntimeException(e);
             }
             System.out.println("test run !!!");
+            dbData.stream().filter(x-> x.getRequestId().equals(requestId)).forEach(x -> x.setReady(true));
+            logger.info("DB status after completing file{}", dbData);
         });
     }
     public boolean isFileReady(String fileId) {
