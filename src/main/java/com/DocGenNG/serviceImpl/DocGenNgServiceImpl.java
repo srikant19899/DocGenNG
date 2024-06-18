@@ -54,7 +54,7 @@ public class DocGenNgServiceImpl implements DocGenNgService {
         if(docGenUtility.checkDuplicateRequest(requestId)){
             throw  new DocumentProcessingException("your Document is processing !!");
         }
-        docGenUtility.addFileStatusInDb(requestId,ticketNumber);
+        docGenUtility.addDocumentStatus(requestId,ticketNumber);
 
 
         // call  asynchronously and do computation accordingliy

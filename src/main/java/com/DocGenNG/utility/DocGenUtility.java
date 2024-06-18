@@ -56,7 +56,7 @@ public class DocGenUtility {
         return null;
     }
 
-    public void addFileStatusInDb(String requestId, String ticketNumber){
+    public void addDocumentStatus(String requestId, String ticketNumber){
         DocGenEntity docGenEntity = new DocGenEntity();
         docGenEntity.setReady(false);
         docGenEntity.setRequestId(requestId);
