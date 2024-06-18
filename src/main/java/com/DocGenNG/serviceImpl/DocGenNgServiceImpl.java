@@ -51,16 +51,11 @@ public class DocGenNgServiceImpl implements DocGenNgService {
         // calling QuoteX service
         Object object = docGenUtility.callQuoteService();
         logger.info("QuoteX service call{}", object.toString());
-        for(DocGenEntity db: dbData){
-            if(db.getRequestId().equals(requestId))
-                throw new DocumentProcessingException("Still processing !!");
+        if(docGenUtility.checkDuplicateRequest(requestId)){
+            throw  new DocumentProcessingException("your Document is processing !!");
         }
-        DocGenEntity docGenEntity = new DocGenEntity();
-        docGenEntity.setReady(false);
-        docGenEntity.setRequestId(requestId);
-        docGenEntity.setTicketNumber(ticketNumber);
-        dbData.add(docGenEntity);
-        logger.info("DB status before completing file{}", dbData);
+        docGenUtility.addFileStatusInDb(requestId,ticketNumber);
+
 
         // call  asynchronously and do computation accordingliy
         generateFile( ticketNumber, requestId, request);
@@ -78,8 +73,7 @@ public class DocGenNgServiceImpl implements DocGenNgService {
                 throw new RuntimeException(e);
             }
             System.out.println("test run !!!");
-            dbData.stream().filter(x-> x.getRequestId().equals(requestId)).forEach(x -> x.setReady(true));
-            logger.info("DB status after completing file{}", dbData);
+            docGenUtility.updateDocumentStatus(requestId);
         });
     }
     public boolean isFileReady(String fileId) {
