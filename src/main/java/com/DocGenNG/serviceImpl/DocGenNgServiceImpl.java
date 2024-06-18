@@ -26,61 +26,22 @@ public class DocGenNgServiceImpl implements DocGenNgService {
         this.docGenUtility = docGenUtility;
     }
     public String processFile(String requestId,String trace, DocGenData request) throws IOException, InterruptedException {
-        // Create directory if not exists
-        String quoteId = request.getQuoteId();
-
-        if (FILE_DIRECTORY == null || FILE_DIRECTORY.isEmpty()) {
-            throw new IllegalArgumentException("FILE_DIRECTORY is null or empty");
-        }
-
-
-
-        Path directory = Paths.get(FILE_DIRECTORY, quoteId);
-
-        if (!Files.exists(directory)) {
-            try {
-                Files.createDirectories(directory);
-                logger.info("Directory created: {}", directory);
-            } catch (IOException e) {
-                logger.error("Error creating directory: {}", directory, e);
-                throw new RuntimeException("Error creating directory: " + directory, e);
-            }
-        }
 
         // Generate file ID
         String fileId = docGenUtility.docNameCreator(request.getQuoteId());
-        // Save file to disk asynchronously
-        generateFile(directory, fileId, requestId, request);
+        // calling QuoteX service
+        Object object = docGenUtility.callQuoteService();
+        logger.info("QuoteX service call{}", object.toString());
+        // call  asynchronously and do computation accordingliy
+        generateFile( fileId, requestId, request);
 
         // Return fileId immediately
         return fileId;
     }
     @Async
-    public CompletableFuture<Void> generateFile(Path directory, String fileId, String requestId, DocGenData request) {
+    public CompletableFuture<Void> generateFile( String fileId, String requestId, DocGenData request) {
         return CompletableFuture.runAsync(() -> {
-           /* Path filePath = directory.resolve(fileId + ".xlsx");
-            try (OutputStream os = Files.newOutputStream(filePath)) {
-                // Simulate a delay
-                try {
-                    Thread.sleep(15000);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new RuntimeException(e);
-                }
-                os.write(file.getBytes());
 
-                // Additional processing if needed (e.g., creating a workbook)
-                try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
-                    // Example: Just saving the workbook back
-                    try (OutputStream os2 = Files.newOutputStream(filePath)) {
-                        workbook.write(os2);
-                    }
-                }
-                System.out.println("Task complete for file: " + fileId);
-            } catch (IOException e) {
-                throw new RuntimeException("Error saving file: " + filePath, e);
-            }*/
-//            this for testing code
             try {
                 Thread.sleep(10000);
             } catch (InterruptedException e) {

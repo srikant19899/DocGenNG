@@ -1,19 +1,16 @@
 package com.DocGenNG.controller;
-
 import com.DocGenNG.exception.InvalidInputException;
 import com.DocGenNG.model.request.DocGenData;
 import com.DocGenNG.model.response.JobSubmitResponse;
 import com.DocGenNG.model.response.DocumentsResponse;
 import com.DocGenNG.model.response.Errors;
 import com.DocGenNG.service.DocGenNgService;
-import io.swagger.annotations.Api;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
 import java.util.Arrays;
+
 
 
 @RestController
@@ -68,15 +66,10 @@ public class DocGenController {
                     content = @Content(schema = @Schema(implementation = JobSubmitResponse.class), mediaType = "application/json"))
     })
     @PostMapping("/documents")
-    public ResponseEntity<Object> submit( @Valid @RequestBody DocGenData request,
+    public ResponseEntity<Object> submit(  @RequestBody @Valid DocGenData request,
                                           @RequestHeader(name = "requestId") String requestId,
-                                          @RequestHeader(name = "trace", required = false) String trace) {
-        /*HttpServletRequest servletRequest
-        String trace = servletRequest.getHeader("trace");
-        String requestId = servletRequest.getHeader("requestId");*/
-        logger.info("Received requestId: {}", requestId);
-        logger.info("Received trace: {}", trace);
-        logger.info("Received request: {}", request);
+                                          @RequestHeader(name = "trace", required = false) String trace ) {
+
         try {
             String fileId = docGenNgService.processFile(requestId, trace, request);
             return ResponseEntity.status(HttpStatus.OK).body(new DocumentsResponse(fileId));

@@ -1,15 +1,17 @@
 package com.DocGenNG.model.request;
 
-import jakarta.validation.constraints.NotEmpty;
+import com.DocGenNG.model.validator.ValidDocType;
+import com.DocGenNG.model.validator.ValidQuoteId;
 import lombok.Data;
 
 
 @Data
 public class DocGenData {
 
-    @NotEmpty(message = "quoteId is required")
+    private String clientId;
+    @ValidQuoteId
     private String quoteId;
-    @NotEmpty(message = "docType is required")
+    @ValidDocType
     private String docType;
     private String template;
 }
