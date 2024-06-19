@@ -1,14 +1,22 @@
 package com.docGenSvc.utility;
 
 
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.core5.util.Timeout;
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import com.docGenSvc.model.entity.DocGenEntity;
+import com.docGenSvc.properties.DocGenProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -17,11 +25,12 @@ import java.util.Map;
 
 @Component
 public class DocGenUtility {
-    OkHttpClient client= new OkHttpClient();
-    ObjectMapper mapper= new ObjectMapper();
     private static final Logger logger = LoggerFactory.getLogger(DocGenUtility.class);
 
     private List<DocGenEntity> dbData = new ArrayList<>();
+    @Autowired
+    private DocGenProperties docGenProperties;
+    private  ObjectMapper objectMapper = new ObjectMapper();
 
 
     public String docNameCreator(String quoteId){
@@ -32,8 +41,36 @@ public class DocGenUtility {
         return  quoteId + "-" + formattedDateTime;
     }
 
-    public Object callQuoteService() throws IOException {
-        try {
+    public Object getQuoteXData() throws IOException {
+        String serviceUrl = docGenProperties.getUrl();
+        int timeout = docGenProperties.getTimeout();
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setConnectTimeout(Timeout.ofMilliseconds(timeout))
+                .setResponseTimeout(Timeout.ofMilliseconds(timeout))
+                .build();
+        try (CloseableHttpClient httpClient = HttpClients.custom()
+                .setDefaultRequestConfig(requestConfig)
+                .build()) {
+            HttpGet request = new HttpGet(serviceUrl);
+            try (CloseableHttpResponse response = httpClient.execute(request)) {
+                if (response.getCode() == 200) {
+                    String responseBody = new String(response.getEntity().getContent().readAllBytes());
+                    return objectMapper.readValue(responseBody, Map.class);
+                } else {
+                    System.out.println("Service call failed with status code: " + response.getCode());
+                    return  null;
+                }
+            } catch (IOException e) {
+                System.err.println("Error executing request: " + e.getMessage());
+                return  null;
+            }
+        } catch (IOException e) {
+            System.err.println("Error creating HttpClient: " + e.getMessage());
+            return  null;
+        }
+
+
+      /*  try {
             OkHttpClient client = new OkHttpClient().newBuilder().build();
 
             Request request = new Request.Builder()
@@ -50,8 +87,8 @@ public class DocGenUtility {
             response.close();
         } catch (Exception e) {
             e.printStackTrace();
-        }
-        return null;
+        }*/
+
     }
 
     public void addDocumentStatus(String requestId, String ticketNumber){
