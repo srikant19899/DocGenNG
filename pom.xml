@@ -11,8 +11,13 @@
 	<groupId>com.DocGenNG</groupId>
 	<artifactId>DocGenNG</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
+	<packaging>pom</packaging>
 	<name>DocGenNG</name>
 	<description>Document Generation Service</description>
+	<modules>
+		<module>DocGenSvc</module>
+		<module>DocGenLib</module>
+	</modules>
 	<properties>
 		<java.version>17</java.version>
 	</properties>
