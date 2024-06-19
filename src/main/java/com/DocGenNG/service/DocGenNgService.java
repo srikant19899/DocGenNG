@@ -1,14 +1,13 @@
 package com.DocGenNG.service;
 
-import com.DocGenNG.model.request.DocumentsRequest;
-import org.springframework.web.multipart.MultipartFile;
+import com.DocGenNG.model.request.DocGenData;
 
 import java.io.IOException;
 
 
 public interface DocGenNgService {
 
-    public String processFile(MultipartFile file, DocumentsRequest request) throws IOException;
+    public String processFile(String requestId,String trace, DocGenData request) throws IOException, InterruptedException;
     public boolean isFileReady(String fileId);
     public byte[] getFile(String fileId) throws IOException;
 

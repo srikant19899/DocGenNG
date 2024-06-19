@@ -5,9 +5,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
-public class DocumentsResponse {
-    public String ticket;
-
+@NoArgsConstructor
+public class Errors {
+    public String code;
+    public String message;
 }

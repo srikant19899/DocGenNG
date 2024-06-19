@@ -4,10 +4,13 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class DocumentsResponse {
-    public String ticket;
+import java.util.List;
 
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class JobSubmitResponse {
+    public List<Errors> errors;
+    public String ticket;
 }
