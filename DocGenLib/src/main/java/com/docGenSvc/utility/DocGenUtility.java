@@ -8,11 +8,9 @@ import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.core5.util.Timeout;
 import java.io.IOException;
-import java.security.GeneralSecurityException;
 import com.docGenSvc.model.entity.DocGenEntity;
 import com.docGenSvc.properties.DocGenProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import okhttp3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,9 +39,10 @@ public class DocGenUtility {
         return  quoteId + "-" + formattedDateTime;
     }
 
-    public Object getQuoteXData() throws IOException {
+    public Object getQuoteXData(/*Object request*/)  {
         String serviceUrl = docGenProperties.getUrl();
         int timeout = docGenProperties.getTimeout();
+//        add audit band info log here
         RequestConfig requestConfig = RequestConfig.custom()
                 .setConnectTimeout(Timeout.ofMilliseconds(timeout))
                 .setResponseTimeout(Timeout.ofMilliseconds(timeout))
@@ -57,38 +56,30 @@ public class DocGenUtility {
                     String responseBody = new String(response.getEntity().getContent().readAllBytes());
                     return objectMapper.readValue(responseBody, Map.class);
                 } else {
-                    System.out.println("Service call failed with status code: " + response.getCode());
+                    //             add error and audit logs
+
                     return  null;
                 }
-            } catch (IOException e) {
-                System.err.println("Error executing request: " + e.getMessage());
+                 /*
+
+                response entity of object insted of string
+                two catch
+                one have mutiple catchs and
+                one and excp
+                //  use proper exception httpclient exc, see all possible ecp for http client
+                return  null;
+
+                */
+            } catch (IOException e) { //  use proper exception httpclient exc, see all possible ecp for http client
+                //             add error and audit logs
+
                 return  null;
             }
         } catch (IOException e) {
-            System.err.println("Error creating HttpClient: " + e.getMessage());
+//             add error and audit logs
             return  null;
         }
-
-
-      /*  try {
-            OkHttpClient client = new OkHttpClient().newBuilder().build();
-
-            Request request = new Request.Builder()
-                    .url("http://localhost:8083/student/2")
-                    .get()
-                    .build();
-            Response response = client.newCall(request).execute();
-            if (response.isSuccessful()) {
-                ObjectMapper mapper = new ObjectMapper();
-                Map<String,String > student = mapper.readValue(response.body().string(), Map.class);
-                return student;
-
-            }
-            response.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }*/
-
+//               add audit band info log here
     }
 
     public void addDocumentStatus(String requestId, String ticketNumber){

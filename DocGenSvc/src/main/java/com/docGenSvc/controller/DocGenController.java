@@ -27,15 +27,11 @@ import java.util.Arrays;
 @RestController
 @Tag(name = "DocGenController")
 public class DocGenController {
-
-    private final DocGenNgService docGenNgService;
+    @Autowired
+    private  DocGenNgService docGenNgService;
     private static final Logger logger = LoggerFactory.getLogger(DocGenController.class);
 
 
-    @Autowired
-    public DocGenController(DocGenNgService docGenNgService) {
-        this.docGenNgService = docGenNgService;
-    }
 
        /*
         step 1: change this service to asych
