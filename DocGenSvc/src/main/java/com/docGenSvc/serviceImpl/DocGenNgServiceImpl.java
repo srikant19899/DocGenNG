@@ -3,7 +3,6 @@ package com.docGenSvc.serviceImpl;
 
 
 import com.docGenSvc.exception.DocumentProcessingException;
-import com.docGenSvc.model.entity.DocGenEntity;
 import com.docGenSvc.model.request.DocGenData;
 import com.docGenSvc.service.DocGenNgService;
 import com.docGenSvc.utility.DocGenUtility;
@@ -17,8 +16,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 @Service
