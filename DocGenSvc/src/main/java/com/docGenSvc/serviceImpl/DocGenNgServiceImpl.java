@@ -58,7 +58,7 @@ public class DocGenNgServiceImpl implements DocGenNgService {
     error => string msg of error, exception object, object{req/res}
     info=> string msg , object === info comman use
     debug = > same as info
-    audit=> audit( starttime, Object, rotuingKey, object, endTime)
+    audit=> audit( starttime, Object, rotuingKey,requestId, object, endTime)
     take proper naming
         write a method for creation csv file from master template and return type should be new generated csv file
         second method for take new csv file as input , doctype and templatename, Quatxservice response, quateId
@@ -88,8 +88,4 @@ public class DocGenNgServiceImpl implements DocGenNgService {
         return Files.readAllBytes(filePath);
     }
 
-
-    private void fileGeneratorMock() throws InterruptedException {
-        Thread.sleep(10000);
-    }
 }

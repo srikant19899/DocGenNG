@@ -1,6 +1,8 @@
 package com.docGenSvc.utility;
 
 
+import com.docGenSvc.model.response.Errors;
+import com.docGenSvc.model.response.JobSubmitResponse;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
@@ -14,10 +16,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -103,5 +108,14 @@ public class DocGenUtility {
     public  void updateDocumentStatus(String requestId){
         dbData.stream().filter(x-> x.getRequestId().equals(requestId)).forEach(x -> x.setReady(true));
         logger.info("DB status after completing file{}", dbData);
+    }
+
+    public ResponseEntity<Object> univarsalExecptionResponse(Exception e, Object object, String statusCode){
+        JobSubmitResponse errorResponse = new JobSubmitResponse(
+                Arrays.asList(new Errors("400", e.getMessage())),
+                ""
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST); // remove duplicasey
+
     }
 }

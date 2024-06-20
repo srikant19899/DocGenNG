@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import  java.util.Arrays;
 
 @ControllerAdvice
-public class CustomExceptionHandler { //DocGenNGecxhandler
+public class DocGenNGExceptionHandler {
     @ExceptionHandler(InvalidInputException.class)
     public ResponseEntity<JobSubmitResponse> handleInvalidInputException(InvalidInputException e) {
         JobSubmitResponse errorResponse = new JobSubmitResponse(
