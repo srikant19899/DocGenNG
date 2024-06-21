@@ -2,9 +2,8 @@ package com.docGenSvc.utility;
 
 
 import com.docGenSvc.exception.InvalidInputException;
+import com.docGenSvc.exception.QuoteXException;
 import com.docGenSvc.model.request.DocGenData;
-import com.docGenSvc.model.response.Errors;
-import com.docGenSvc.model.response.JobSubmitResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -19,15 +18,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-
 import java.io.InputStream;
+import java.net.SocketTimeoutException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -38,21 +34,21 @@ public class DocGenUtility {
     private List<DocGenEntity> dbData = new ArrayList<>();
     @Autowired
     private DocGenProperties docGenProperties;
-    private  ObjectMapper objectMapper = new ObjectMapper();
+    private ObjectMapper objectMapper = new ObjectMapper();
 
 
-    public String docNameCreator(String quoteId){
+    public String docNameCreator(String quoteId) {
         LocalDateTime localDateTime = LocalDateTime.now();
         // Format LocalDateTime to a string with a separator
         String formattedDateTime = localDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss"));
         System.out.println(quoteId + "-" + formattedDateTime);
-        return  quoteId + "-" + formattedDateTime;
+        return quoteId + "-" + formattedDateTime;
     }
 
-    public Object getQuoteXData(DocGenData docGenData)  {
+    public Object getQuoteXData(DocGenData docGenData) {
         String serviceUrl = docGenProperties.getUrl();
         int timeout = docGenProperties.getTimeout();
-//        add audit band info log here
+//        add audit and info log here
         RequestConfig requestConfig = RequestConfig.custom()
                 .setConnectTimeout(Timeout.ofMilliseconds(timeout))
                 .setResponseTimeout(Timeout.ofMilliseconds(timeout))
@@ -64,17 +60,16 @@ public class DocGenUtility {
 
             if (response.getCode() == 200) {
                 return quoteXDataMapper(response.getEntity().getContent());
-            } else {
-                return null;
             }
+        } catch (SocketTimeoutException e) {
+            throw new QuoteXException("Socket time out");
         } catch (IOException e) {
-
-
+            throw new QuoteXException("I/O error occurred ");
         }
         return null;
-//               add audit band info log here
     }
-    private Object quoteXDataMapper(InputStream inputStream)  {
+
+    private Object quoteXDataMapper(InputStream inputStream) {
         try {
             return objectMapper.readValue(inputStream, Map.class);
         } catch (IOException e) {
@@ -82,7 +77,7 @@ public class DocGenUtility {
         }
     }
 
-    public void addDocumentStatus(String requestId, String ticketNumber){
+    public void addDocumentStatus(String requestId, String ticketNumber) {
         DocGenEntity docGenEntity = new DocGenEntity();
         docGenEntity.setReady(false);
         docGenEntity.setRequestId(requestId);
@@ -91,39 +86,42 @@ public class DocGenUtility {
         logger.info("DB status before completing file{}", dbData);
 
     }
-    public boolean checkDuplicateRequest(String requestId){
-        for(DocGenEntity db: dbData){
-            if(db.getRequestId().equals(requestId)) {
+
+    public boolean checkDuplicateRequest(String requestId) {
+        for (DocGenEntity db : dbData) {
+            if (db.getRequestId().equals(requestId)) {
                 return true;
             }
         }
         return false;
     }
 
-    public  void updateDocumentStatus(String requestId){
-        dbData.stream().filter(x-> x.getRequestId().equals(requestId)).forEach(x -> x.setReady(true));
+    public void updateDocumentStatus(String requestId) {
+        dbData.stream().filter(x -> x.getRequestId().equals(requestId)).forEach(x -> x.setReady(true));
         logger.info("DB status after completing file{}", dbData);
     }
 
-    public void validateRequest(DocGenData docGenData){
+    public void validateRequest(DocGenData docGenData) {
         quoteIdValidator(docGenData.getQuoteId());
         docTypeValidator(docGenData.getDocType());
     }
-    private void quoteIdValidator(String quoteId){
-        if ( StringUtils.isBlank(quoteId)) {
+
+    private void quoteIdValidator(String quoteId) {
+        if (StringUtils.isBlank(quoteId)) {
             throw new InvalidInputException("docType should be present");
-        }else if (quoteId.length()<2){
+        } else if (quoteId.length() < 2) {
             throw new InvalidInputException("docType minimum length should be 2");
-        } else if (quoteId.length()>50) {
+        } else if (quoteId.length() > 50) {
             throw new InvalidInputException("docType maximum length should be 50");
         }
     }
-    private void docTypeValidator(String docType){
-        if ( StringUtils.isBlank(docType)) {
+
+    private void docTypeValidator(String docType) {
+        if (StringUtils.isBlank(docType)) {
             throw new InvalidInputException("docType should be present");
-        }else if (docType.length()<2){
+        } else if (docType.length() < 2) {
             throw new InvalidInputException("docType minimum length should be 2");
-        } else if (docType.length()>50) {
+        } else if (docType.length() > 50) {
             throw new InvalidInputException("docType maximum length should be 50");
         }
     }
