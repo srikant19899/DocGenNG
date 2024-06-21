@@ -63,20 +63,20 @@ public class DocGenController {
                     content = @Content(schema = @Schema(implementation = JobSubmitResponse.class), mediaType = "application/json"))
     })
     @PostMapping("/documents")
-    public ResponseEntity<Object> submit(  @RequestBody @Valid DocGenData request,
+    public ResponseEntity<Object> submit(  @RequestBody  DocGenData request,
                                           @RequestHeader(name = "requestId") String requestId,
-                                          @RequestHeader(name = "trace", required = false) String trace ) {
+                                          @RequestHeader(name = "trace", required = false) String trace ) throws Exception {
 
         try {
             String fileId = docGenNgService.processFile(requestId, trace, request);
             return ResponseEntity.status(HttpStatus.OK).body(new DocumentsResponse(fileId));
         }  catch (InvalidInputException | IOException | InterruptedException e) {
             logger.error("InvalidInputException occurred: {}", e.getMessage());
-            throw new InvalidInputException("InvalidInputException occurred: " + e.getMessage());
+            throw new InvalidInputException( e.getMessage());
         }catch (Exception e) {
             logger.error("IOException occurred: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new JobSubmitResponse(Arrays.asList(new Errors("500", e.getMessage())), ""));
-        }
+            throw new Exception(e.getMessage());
+           }
 
     }
 

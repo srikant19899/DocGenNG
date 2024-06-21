@@ -1,8 +1,11 @@
 package com.docGenSvc.utility;
 
 
+import com.docGenSvc.exception.InvalidInputException;
+import com.docGenSvc.model.request.DocGenData;
 import com.docGenSvc.model.response.Errors;
 import com.docGenSvc.model.response.JobSubmitResponse;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
@@ -19,6 +22,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -44,7 +49,7 @@ public class DocGenUtility {
         return  quoteId + "-" + formattedDateTime;
     }
 
-    public Object getQuoteXData(/*Object request*/)  {
+    public Object getQuoteXData(DocGenData docGenData)  {
         String serviceUrl = docGenProperties.getUrl();
         int timeout = docGenProperties.getTimeout();
 //        add audit band info log here
@@ -54,37 +59,27 @@ public class DocGenUtility {
                 .build();
         try (CloseableHttpClient httpClient = HttpClients.custom()
                 .setDefaultRequestConfig(requestConfig)
-                .build()) {
-            HttpGet request = new HttpGet(serviceUrl);
-            try (CloseableHttpResponse response = httpClient.execute(request)) {
-                if (response.getCode() == 200) {
-                    String responseBody = new String(response.getEntity().getContent().readAllBytes());
-                    return objectMapper.readValue(responseBody, Map.class);
-                } else {
-                    //             add error and audit logs
+                .build();
+             CloseableHttpResponse response = httpClient.execute(new HttpGet(serviceUrl))) {
 
-                    return  null;
-                }
-                 /*
-
-                response entity of object insted of string
-                two catch
-                one have mutiple catchs and
-                one and excp
-                //  use proper exception httpclient exc, see all possible ecp for http client
-                return  null;
-
-                */
-            } catch (IOException e) { //  use proper exception httpclient exc, see all possible ecp for http client
-                //             add error and audit logs
-
-                return  null;
+            if (response.getCode() == 200) {
+                return quoteXDataMapper(response.getEntity().getContent());
+            } else {
+                return null;
             }
         } catch (IOException e) {
-//             add error and audit logs
-            return  null;
+
+
         }
+        return null;
 //               add audit band info log here
+    }
+    private Object quoteXDataMapper(InputStream inputStream)  {
+        try {
+            return objectMapper.readValue(inputStream, Map.class);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void addDocumentStatus(String requestId, String ticketNumber){
@@ -110,12 +105,27 @@ public class DocGenUtility {
         logger.info("DB status after completing file{}", dbData);
     }
 
-    public ResponseEntity<Object> univarsalExecptionResponse(Exception e, Object object, String statusCode){
-        JobSubmitResponse errorResponse = new JobSubmitResponse(
-                Arrays.asList(new Errors("400", e.getMessage())),
-                ""
-        );
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST); // remove duplicasey
-
+    public void validateRequest(DocGenData docGenData){
+        quoteIdValidator(docGenData.getQuoteId());
+        docTypeValidator(docGenData.getDocType());
     }
+    private void quoteIdValidator(String quoteId){
+        if ( StringUtils.isBlank(quoteId)) {
+            throw new InvalidInputException("docType should be present");
+        }else if (quoteId.length()<2){
+            throw new InvalidInputException("docType minimum length should be 2");
+        } else if (quoteId.length()>50) {
+            throw new InvalidInputException("docType maximum length should be 50");
+        }
+    }
+    private void docTypeValidator(String docType){
+        if ( StringUtils.isBlank(docType)) {
+            throw new InvalidInputException("docType should be present");
+        }else if (docType.length()<2){
+            throw new InvalidInputException("docType minimum length should be 2");
+        } else if (docType.length()>50) {
+            throw new InvalidInputException("docType maximum length should be 50");
+        }
+    }
+
 }
