@@ -4,4 +4,5 @@ import com.docGenSvc.model.entity.DocGenNgStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface DocGenNgRepository extends JpaRepository<DocGenNgStatus, String> {
+    public void moveFiletoPath(String fileName, String serverPath);
 }
