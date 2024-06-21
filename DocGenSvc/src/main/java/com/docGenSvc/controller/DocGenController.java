@@ -2,7 +2,6 @@ package com.docGenSvc.controller;
 import com.docGenSvc.exception.InvalidInputException;
 import com.docGenSvc.model.request.DocGenData;
 import com.docGenSvc.model.response.DocumentsResponse;
-import com.docGenSvc.model.response.Errors;
 import com.docGenSvc.model.response.JobSubmitResponse;
 import com.docGenSvc.service.DocGenNgService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,31 +10,24 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import org.slf4j.Logger;
-;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
-import java.util.Arrays;
 
 
 
 @RestController
 @Tag(name = "DocGenController")
 public class DocGenController {
-
-    private final DocGenNgService docGenNgService;
+    @Autowired
+    private  DocGenNgService docGenNgService;
     private static final Logger logger = LoggerFactory.getLogger(DocGenController.class);
 
 
-    @Autowired
-    public DocGenController(DocGenNgService docGenNgService) {
-        this.docGenNgService = docGenNgService;
-    }
 
        /*
         step 1: change this service to asych
@@ -67,20 +59,20 @@ public class DocGenController {
                     content = @Content(schema = @Schema(implementation = JobSubmitResponse.class), mediaType = "application/json"))
     })
     @PostMapping("/documents")
-    public ResponseEntity<Object> submit(  @RequestBody @Valid DocGenData request,
+    public ResponseEntity<Object> submit(  @RequestBody  DocGenData request,
                                           @RequestHeader(name = "requestId") String requestId,
-                                          @RequestHeader(name = "trace", required = false) String trace ) {
+                                          @RequestHeader(name = "trace", required = false) String trace ) throws Exception {
 
         try {
             String fileId = docGenNgService.processFile(requestId, trace, request);
             return ResponseEntity.status(HttpStatus.OK).body(new DocumentsResponse(fileId));
         }  catch (InvalidInputException | IOException | InterruptedException e) {
             logger.error("InvalidInputException occurred: {}", e.getMessage());
-            throw new InvalidInputException("InvalidInputException occurred: " + e.getMessage());
+            throw new InvalidInputException( e.getMessage());
         }catch (Exception e) {
             logger.error("IOException occurred: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new JobSubmitResponse(Arrays.asList(new Errors("500", e.getMessage())), ""));
-        }
+            throw new Exception(e.getMessage());
+           }
 
     }
 
