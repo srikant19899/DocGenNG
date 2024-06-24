@@ -9,7 +9,6 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import java.io.*;
 import java.util.*;
-import com.docGenSvc.exception.DocumentProcessingException;
 import com.docGenSvc.model.request.DocGenData;
 import com.docGenSvc.service.DocGenNgService;
 import com.docGenSvc.utility.DocGenUtility;
@@ -30,6 +29,9 @@ public class DocGenNgServiceImpl implements DocGenNgService {
     private static final Logger logger = LoggerFactory.getLogger(DocGenNgServiceImpl.class);
 
     private static final String FILE_DIRECTORY = "processed_files/";
+    private String copyTemplate = "CPEA_TEMPLATE_v3copy.xlsx";
+    private String finalReport = "CPEA_TEMPLATE_v3copy_delete.xlsx";
+    private String sheetNameToDelete = "PIVOT";
 
     @Autowired
     private DocGenUtility docGenUtility;
@@ -41,13 +43,12 @@ public class DocGenNgServiceImpl implements DocGenNgService {
 
         docGenUtility.validateRequest(request);
 
-
         String ticketNumber = docGenUtility.docNameCreator(request.getQuoteId());
 
         docGenUtility.addDocumentStatus(requestId, ticketNumber);
 
-
         // call  asynchronously and do computation accordingliy
+
         generateFile(ticketNumber, requestId, request);
 
         return ticketNumber;
@@ -72,33 +73,21 @@ public class DocGenNgServiceImpl implements DocGenNgService {
                 default -> docGenUtility.getQuoteXData(request);
             };
             logger.info("QuoteX service call{}", quoteXData.toString());
-            if (docGenUtility.checkDuplicateRequest(requestId)) {
-                throw new DocumentProcessingException("your Document is processing !!");
-            }
-            String templateFile = "CPEA_TEMPLATE_v3.0.xlsx";
-            String copyFilePath = "CPEA_TEMPLATE_v3copy.xlsx";
-            String finalFilePath = "CPEA_TEMPLATE_v3copy_delete.xlsx";
-            String sheetNameToDelete = "PIVOT";
 
             try {
                 // create initial file status in DB
-                File copyTemplateFile=copyTemplate(templateFile, copyFilePath);
-
+                File copyTemplateFile = copyTemplate(docGenProperties.getTemplateFile(), copyTemplate);
                 Thread.sleep(docGenProperties.getDocGenLag());
-                // write business logic method here and take file from copy template file as input
-//                /*File docGenReport =*/ generateDocGenReport(copyTemplateFile,request,(QuoteXWrapper) quoteXData);
-                deleteSelectedSheet(copyTemplateFile, finalFilePath, Arrays.asList(sheetNameToDelete));
+//                File docGenReport = generateDocGenReport(copyTemplateFile,request,(QuoteXWrapper) quoteXData);
+                File finalReport = deleteSelectedSheet(copyTemplateFile, this.finalReport, Arrays.asList(sheetNameToDelete));
                 // file status update in DB and update path of file
-
-                System.out.println("File copied and sheet deleted successfully.");
-            } catch (IOException e) { // intrupted here
-                throw new RuntimeException(e);
-            } catch (InterruptedException e) { // comman exc , run in debug point getting proper msg or not
-                throw new RuntimeException(e);
-                // logger
+                logger.info("final file generated {}", finalReport);
+            } catch (IOException e) {
+                throw new RuntimeException(e.getMessage());
+            } catch (Exception e) {
+                throw new RuntimeException(e.getMessage());
             }
-            System.out.println("test run !!!");
-           //  docGenUtility.updateDocumentStatus(requestId);
+            logger.info("successfully document created !!!");
         });
     }
 
@@ -113,35 +102,31 @@ public class DocGenNgServiceImpl implements DocGenNgService {
         return Files.readAllBytes(filePath);
     }
 
-    private File copyTemplate(String inputFilePath, String outputFilePath) throws IOException {
-        // Set the minimum inflate ratio to a lower value
+    private File copyTemplate(String inputFilePath, String outputFilePath) throws Exception {
         ZipSecureFile.setMinInflateRatio(0.001);
         logger.info("Starting to copy file from {} to {}", inputFilePath, outputFilePath);
-
         ClassPathResource classPathResource = new ClassPathResource(inputFilePath);
         try (InputStream fis = classPathResource.getInputStream();
              Workbook workbook = new XSSFWorkbook(fis);
              FileOutputStream fos = new FileOutputStream(outputFilePath)) {
-
             workbook.write(fos);
             logger.info("File copied successfully from {} to {}", inputFilePath, outputFilePath);
         } catch (IOException e) {
             logger.error("Error copying file: {}", e.getMessage(), e);
-            throw e;
+            throw new IOException(e.getMessage());
         } catch (Exception e) {
             logger.error("Unexpected error: {}", e.getMessage(), e);
+            throw new Exception(e.getMessage());
         }
         return new File(outputFilePath);
     }
 
-  /*  private File generateDocGenReport(File copyTemplateFile, DocGenData request, QuoteXWrapper quoteXData){
+    private File generateDocGenReport(File copyTemplateFile, DocGenData request, QuoteXWrapper quoteXData) {
         return new File("report");
     }
-*/
 
 
-    private File deleteSelectedSheet(File inputFilePath, String outputFilePath, List<String> sheets) throws IOException {
-        // file return from here
+    private File deleteSelectedSheet(File inputFilePath, String outputFilePath, List<String> sheets) throws Exception {
         ZipSecureFile.setMinInflateRatio(0.001);
         logger.info("Starting to delete sheets from file {}", inputFilePath);
         try (FileInputStream fis = new FileInputStream(inputFilePath);
@@ -160,11 +145,11 @@ public class DocGenNgServiceImpl implements DocGenNgService {
             logger.info("Selected sheets deleted and file saved as {}", outputFilePath);
         } catch (IOException e) {
             logger.error("Error deleting sheets: {}", e.getMessage(), e);
-            throw e;
-        } catch (Exception e ){
-
+            throw new IOException(e.getMessage());
+        } catch (Exception e) {
+            logger.error("Unexpected error: {}", e.getMessage(), e);
+            throw new Exception(e.getMessage());
         }
         return new File(outputFilePath);
     }
-
 }

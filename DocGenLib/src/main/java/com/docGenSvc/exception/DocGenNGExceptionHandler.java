@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 
+import java.io.IOException;
 import  java.util.Arrays;
 
 @ControllerAdvice
@@ -25,6 +26,11 @@ public class DocGenNGExceptionHandler {
     }
     @ExceptionHandler(QuoteXException.class)
     public ResponseEntity<Object> quateXException(QuoteXException e){
+        return exceptionResponse(e, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(IOException.class)
+    public ResponseEntity<Object> ioExceptionHanler(IOException e){
         return exceptionResponse(e, HttpStatus.INTERNAL_SERVER_ERROR);
     }
     private ResponseEntity<Object> exceptionResponse(Exception e, HttpStatusCode code){

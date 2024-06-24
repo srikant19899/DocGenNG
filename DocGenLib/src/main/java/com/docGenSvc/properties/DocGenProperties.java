@@ -15,6 +15,7 @@ public class DocGenProperties {
     private int timeout;
     @Value("${docgen.backend.generation.wait}")
     private int docGenLag;
-
+    @Value("${docgen.template}")
+    private String templateFile;
 
 }
