@@ -4,6 +4,7 @@ package com.docGenSvc.utility;
 import com.docGenSvc.exception.InvalidInputException;
 import com.docGenSvc.exception.QuoteXException;
 import com.docGenSvc.model.request.DocGenData;
+import com.fasterxml.jackson.core.JsonParser;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -11,7 +12,9 @@ import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.core5.util.Timeout;
+
 import java.io.IOException;
+
 import com.docGenSvc.model.entity.DocGenEntity;
 import com.docGenSvc.properties.DocGenProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
 import java.io.InputStream;
 import java.net.SocketTimeoutException;
 import java.time.LocalDateTime;
@@ -49,29 +53,30 @@ public class DocGenUtility {
         String serviceUrl = docGenProperties.getUrl();
         int timeout = docGenProperties.getTimeout();
 //        add audit and info log here
-        RequestConfig requestConfig = RequestConfig.custom()
-                .setConnectTimeout(Timeout.ofMilliseconds(timeout))
-                .setResponseTimeout(Timeout.ofMilliseconds(timeout))
-                .build();
-        try (CloseableHttpClient httpClient = HttpClients.custom()
-                .setDefaultRequestConfig(requestConfig)
-                .build();
-             CloseableHttpResponse response = httpClient.execute(new HttpGet(serviceUrl))) {
+        try {
+            RequestConfig requestConfig = RequestConfig.custom()
+                    .setConnectTimeout(Timeout.ofMilliseconds(timeout))
+                    .setResponseTimeout(Timeout.ofMilliseconds(timeout))
+                    .build();
+            CloseableHttpClient httpClient = HttpClients.custom()
+                    .setDefaultRequestConfig(requestConfig)
+                    .build();
+            CloseableHttpResponse response = httpClient.execute(new HttpGet(serviceUrl));
 
             if (response.getCode() == 200) {
                 return quoteXDataMapper(response.getEntity().getContent());
             }
-        } catch (SocketTimeoutException e) {
-            throw new QuoteXException("Socket time out");
         } catch (IOException e) {
-            throw new QuoteXException("I/O error occurred ");
+            throw new QuoteXException("QuoteX Input output Exception");
+        } catch (Exception e) {
+            throw new QuoteXException("QuoteX called Failed");
         }
         return null;
     }
 
     private Object quoteXDataMapper(InputStream inputStream) {
         try {
-            return objectMapper.readValue(inputStream, Map.class);
+            return objectMapper.readValue( inputStream, Map.class);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
