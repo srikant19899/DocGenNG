@@ -100,7 +100,7 @@ public class DocGenNgServiceImpl implements DocGenNgService {
             String sheetNameToDelete = "PIVOT";
 
             try {
-                copyExcelFile(inputFilePath, copyFilePath);
+                copyTemplate(inputFilePath, copyFilePath);
                 Thread.sleep(5000); // wait for the copy to complete
                 deleteSelectedSheet(copyFilePath, finalFilePath, Arrays.asList(sheetNameToDelete));
                 System.out.println("File copied and sheet deleted successfully.");
@@ -125,7 +125,7 @@ public class DocGenNgServiceImpl implements DocGenNgService {
         return Files.readAllBytes(filePath);
     }
 
-    public void copyExcelFile(String inputFilePath, String outputFilePath) throws IOException {
+    private void copyTemplate(String inputFilePath, String outputFilePath) throws IOException {
         ZipSecureFile.setMinInflateRatio(0.001);
         logger.info("Starting to copy file from {} to {}", inputFilePath, outputFilePath);
 
@@ -142,7 +142,7 @@ public class DocGenNgServiceImpl implements DocGenNgService {
         }
     }
 
-    public void deleteSelectedSheet(String inputFilePath, String outputFilePath, List<String> sheets) throws IOException {
+    private void deleteSelectedSheet(String inputFilePath, String outputFilePath, List<String> sheets) throws IOException {
         ZipSecureFile.setMinInflateRatio(0.001);
 
         logger.info("Starting to delete sheets from file {}", inputFilePath);
