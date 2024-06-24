@@ -1,5 +1,7 @@
 package com.docGenSvc.serviceImpl;
 
+import com.docGenSvc.model.quoteXWrapper.QuoteXWrapper;
+import com.docGenSvc.properties.DocGenProperties;
 import org.apache.poi.openxml4j.util.ZipSecureFile;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -7,10 +9,6 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import java.io.*;
 import java.util.*;
-
-import com.docGenSvc.csv.CsvGenerator;
-import com.docGenSvc.csv.ExcelParser;
-import com.docGenSvc.csv.FileService;
 import com.docGenSvc.exception.DocumentProcessingException;
 import com.docGenSvc.model.request.DocGenData;
 import com.docGenSvc.service.DocGenNgService;
@@ -18,9 +16,7 @@ import com.docGenSvc.utility.DocGenUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ResourceLoader;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -34,17 +30,11 @@ public class DocGenNgServiceImpl implements DocGenNgService {
     private static final Logger logger = LoggerFactory.getLogger(DocGenNgServiceImpl.class);
 
     private static final String FILE_DIRECTORY = "processed_files/";
-    private static final String CSV_DIRECTORY = "csv-files";
-    private static final String COMBINED_CSV_FILE = "combined_sheets.csv";
 
     @Autowired
     private DocGenUtility docGenUtility;
     @Autowired
-    private FileService fileService;
-    @Autowired
-    private ExcelParser excelParser;
-    @Autowired
-    private CsvGenerator csvGenerator;
+    private DocGenProperties docGenProperties;
 
 
     public String processFile(String requestId, String trace, DocGenData request) {
@@ -53,17 +43,7 @@ public class DocGenNgServiceImpl implements DocGenNgService {
 
 
         String ticketNumber = docGenUtility.docNameCreator(request.getQuoteId());
-        // create getQuatXRequest(DocGenNgRequest)->  return type quatXRequest o
-        Object object = switch (request.getClientId()) {
-            case "PROS" -> docGenUtility.getQuoteXData(request);
-            default -> docGenUtility.getQuoteXData(request);
-        };
 
-
-        logger.info("QuoteX service call{}", object.toString());
-        if (docGenUtility.checkDuplicateRequest(requestId)) {
-            throw new DocumentProcessingException("your Document is processing !!");
-        }
         docGenUtility.addDocumentStatus(requestId, ticketNumber);
 
 
@@ -87,30 +67,38 @@ public class DocGenNgServiceImpl implements DocGenNgService {
     @Async
     public CompletableFuture<Void> generateFile(String fileId, String requestId, DocGenData request) {
         return CompletableFuture.runAsync(() -> {
-
-//            try {
-//                Thread.sleep(60000);
-//            } catch (InterruptedException e) {
-//                throw new RuntimeException(e);
-//            }
-//
-            String inputFilePath = "CPEA_TEMPLATE_v3.0.xlsx";
+            Object quoteXData = switch (request.getClientId()) {
+                case "PROS" -> docGenUtility.getQuoteXData(request);
+                default -> docGenUtility.getQuoteXData(request);
+            };
+            logger.info("QuoteX service call{}", quoteXData.toString());
+            if (docGenUtility.checkDuplicateRequest(requestId)) {
+                throw new DocumentProcessingException("your Document is processing !!");
+            }
+            String templateFile = "CPEA_TEMPLATE_v3.0.xlsx";
             String copyFilePath = "CPEA_TEMPLATE_v3copy.xlsx";
             String finalFilePath = "CPEA_TEMPLATE_v3copy_delete.xlsx";
             String sheetNameToDelete = "PIVOT";
 
             try {
-                copyTemplate(inputFilePath, copyFilePath);
-                Thread.sleep(5000); // wait for the copy to complete
-                deleteSelectedSheet(copyFilePath, finalFilePath, Arrays.asList(sheetNameToDelete));
+                // create initial file status in DB
+                File copyTemplateFile=copyTemplate(templateFile, copyFilePath);
+
+                Thread.sleep(docGenProperties.getDocGenLag());
+                // write business logic method here and take file from copy template file as input
+//                /*File docGenReport =*/ generateDocGenReport(copyTemplateFile,request,(QuoteXWrapper) quoteXData);
+                deleteSelectedSheet(copyTemplateFile, finalFilePath, Arrays.asList(sheetNameToDelete));
+                // file status update in DB and update path of file
+
                 System.out.println("File copied and sheet deleted successfully.");
-            } catch (IOException e) {
+            } catch (IOException e) { // intrupted here
                 throw new RuntimeException(e);
-            } catch (InterruptedException e) {
+            } catch (InterruptedException e) { // comman exc , run in debug point getting proper msg or not
                 throw new RuntimeException(e);
+                // logger
             }
             System.out.println("test run !!!");
-            docGenUtility.updateDocumentStatus(requestId);
+           //  docGenUtility.updateDocumentStatus(requestId);
         });
     }
 
@@ -125,7 +113,8 @@ public class DocGenNgServiceImpl implements DocGenNgService {
         return Files.readAllBytes(filePath);
     }
 
-    private void copyTemplate(String inputFilePath, String outputFilePath) throws IOException {
+    private File copyTemplate(String inputFilePath, String outputFilePath) throws IOException {
+        // Set the minimum inflate ratio to a lower value
         ZipSecureFile.setMinInflateRatio(0.001);
         logger.info("Starting to copy file from {} to {}", inputFilePath, outputFilePath);
 
@@ -139,14 +128,22 @@ public class DocGenNgServiceImpl implements DocGenNgService {
         } catch (IOException e) {
             logger.error("Error copying file: {}", e.getMessage(), e);
             throw e;
+        } catch (Exception e) {
+            logger.error("Unexpected error: {}", e.getMessage(), e);
         }
+        return new File(outputFilePath);
     }
 
-    private void deleteSelectedSheet(String inputFilePath, String outputFilePath, List<String> sheets) throws IOException {
+  /*  private File generateDocGenReport(File copyTemplateFile, DocGenData request, QuoteXWrapper quoteXData){
+        return new File("report");
+    }
+*/
+
+
+    private File deleteSelectedSheet(File inputFilePath, String outputFilePath, List<String> sheets) throws IOException {
+        // file return from here
         ZipSecureFile.setMinInflateRatio(0.001);
-
         logger.info("Starting to delete sheets from file {}", inputFilePath);
-
         try (FileInputStream fis = new FileInputStream(inputFilePath);
              Workbook workbook = new XSSFWorkbook(fis);
              FileOutputStream fos = new FileOutputStream(outputFilePath)) {
@@ -164,6 +161,10 @@ public class DocGenNgServiceImpl implements DocGenNgService {
         } catch (IOException e) {
             logger.error("Error deleting sheets: {}", e.getMessage(), e);
             throw e;
+        } catch (Exception e ){
+
         }
+        return new File(outputFilePath);
     }
+
 }

@@ -23,6 +23,10 @@ public class DocGenNGExceptionHandler {
        return exceptionResponse(e,HttpStatus.INTERNAL_SERVER_ERROR);
 
     }
+    @ExceptionHandler(QuoteXException.class)
+    public ResponseEntity<Object> quateXException(QuoteXException e){
+        return exceptionResponse(e, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
     private ResponseEntity<Object> exceptionResponse(Exception e, HttpStatusCode code){
         JobSubmitResponse errorResponse = new JobSubmitResponse(
                 Arrays.asList(new Errors(code.toString(), e.getMessage())),

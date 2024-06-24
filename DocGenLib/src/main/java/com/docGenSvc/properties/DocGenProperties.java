@@ -13,6 +13,8 @@ public class DocGenProperties {
     private String uri;
     @Value("${docgen.backend.quotex.timeout}")
     private int timeout;
+    @Value("${docgen.backend.generation.wait}")
+    private int docGenLag;
 
 
 }
