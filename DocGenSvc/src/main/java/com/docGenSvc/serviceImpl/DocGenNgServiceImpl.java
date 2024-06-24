@@ -1,12 +1,13 @@
 package com.docGenSvc.serviceImpl;
 
+import org.apache.poi.openxml4j.util.ZipSecureFile;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+
 import com.docGenSvc.csv.CsvGenerator;
 import com.docGenSvc.csv.ExcelParser;
 import com.docGenSvc.csv.FileService;
@@ -26,7 +27,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -93,11 +93,20 @@ public class DocGenNgServiceImpl implements DocGenNgService {
 //            } catch (InterruptedException e) {
 //                throw new RuntimeException(e);
 //            }
-//            convertXlsxToCsv("CPEA_TEMPLATE_v3.0.xlsx","output.csv");
+//
+            String inputFilePath = "CPEA_TEMPLATE_v3.0.xlsx";
+            String copyFilePath = "CPEA_TEMPLATE_v3copy.xlsx";
+            String finalFilePath = "CPEA_TEMPLATE_v3copy_delete.xlsx";
+            String sheetNameToDelete = "PIVOT";
+
             try {
-//                List<File> csvFiles=copyTemplateExcelToCsv("CPEA_TEMPLATE_v3.0.xlsx");
-                convertExcelToSingleCsv();
+                copyExcelFile(inputFilePath, copyFilePath);
+                Thread.sleep(5000); // wait for the copy to complete
+                deleteSelectedSheet(copyFilePath, finalFilePath, Arrays.asList(sheetNameToDelete));
+                System.out.println("File copied and sheet deleted successfully.");
             } catch (IOException e) {
+                throw new RuntimeException(e);
+            } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
             System.out.println("test run !!!");
@@ -116,91 +125,45 @@ public class DocGenNgServiceImpl implements DocGenNgService {
         return Files.readAllBytes(filePath);
     }
 
-    public List<File> copyTemplateExcelToCsv(String templateFileXLSX) throws IOException {
-        List<File> csvFiles = new ArrayList<>();
-        ClassPathResource resource = new ClassPathResource(templateFileXLSX);
+    public void copyExcelFile(String inputFilePath, String outputFilePath) throws IOException {
+        ZipSecureFile.setMinInflateRatio(0.001);
+        logger.info("Starting to copy file from {} to {}", inputFilePath, outputFilePath);
 
-        try (InputStream is = resource.getInputStream(); Workbook workbook = new XSSFWorkbook(is)) {
-            for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
-                Sheet sheet = workbook.getSheetAt(i);
-                File csvFile = convertSheetToCsv(sheet);
-                csvFiles.add(csvFile);
-            }
+        ClassPathResource classPathResource = new ClassPathResource(inputFilePath);
+        try (InputStream fis = classPathResource.getInputStream();
+             Workbook workbook = new XSSFWorkbook(fis);
+             FileOutputStream fos = new FileOutputStream(outputFilePath)) {
+
+            workbook.write(fos);
+            logger.info("File copied successfully from {} to {}", inputFilePath, outputFilePath);
+        } catch (IOException e) {
+            logger.error("Error copying file: {}", e.getMessage(), e);
+            throw e;
         }
-
-        return csvFiles;
     }
-    private File convertSheetToCsv(Sheet sheet) throws IOException {
-        File csvFile = File.createTempFile(sheet.getSheetName(), ".csv");
-        try (PrintWriter writer = new PrintWriter(new FileWriter(csvFile))) {
-            for (Row row : sheet) {
-                List<String> cells = new ArrayList<>();
-                for (Cell cell : row) {
-                    switch (cell.getCellType()) {
-                        case STRING:
-                            cells.add(cell.getStringCellValue());
-                            break;
-                        case NUMERIC:
-                            cells.add(String.valueOf(cell.getNumericCellValue()));
-                            break;
-                        case BOOLEAN:
-                            cells.add(String.valueOf(cell.getBooleanCellValue()));
-                            break;
-                        case FORMULA:
-                            cells.add(cell.getCellFormula());
-                            break;
-                        default:
-                            cells.add("");
-                    }
+
+    public void deleteSelectedSheet(String inputFilePath, String outputFilePath, List<String> sheets) throws IOException {
+        ZipSecureFile.setMinInflateRatio(0.001);
+
+        logger.info("Starting to delete sheets from file {}", inputFilePath);
+
+        try (FileInputStream fis = new FileInputStream(inputFilePath);
+             Workbook workbook = new XSSFWorkbook(fis);
+             FileOutputStream fos = new FileOutputStream(outputFilePath)) {
+            for (String sheetName : sheets) {
+                int sheetIndex = workbook.getSheetIndex(sheetName);
+                if (sheetIndex != -1) {
+                    workbook.removeSheetAt(sheetIndex);
+                    logger.info("Deleted sheet: {}", sheetName);
+                } else {
+                    logger.warn("Sheet {} not found", sheetName);
                 }
-                writer.println(String.join(",", cells));
             }
+            workbook.write(fos);
+            logger.info("Selected sheets deleted and file saved as {}", outputFilePath);
+        } catch (IOException e) {
+            logger.error("Error deleting sheets: {}", e.getMessage(), e);
+            throw e;
         }
-        return csvFile;
     }
-
-    public String convertExcelToSingleCsv() throws IOException {
-        ClassPathResource resource = new ClassPathResource("CPEA_TEMPLATE_v3.0.xlsx");
-        Path csvDirectoryPath = Paths.get(CSV_DIRECTORY);
-        if (!Files.exists(csvDirectoryPath)) {
-            Files.createDirectories(csvDirectoryPath);
-        }
-        Path csvFilePath = csvDirectoryPath.resolve(COMBINED_CSV_FILE);
-
-        try (InputStream is = resource.getInputStream();
-             Workbook workbook = new XSSFWorkbook(is);
-             PrintWriter writer = new PrintWriter(Files.newBufferedWriter(csvFilePath))) {
-
-            for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
-                Sheet sheet = workbook.getSheetAt(i);
-                writer.println("Sheet: " + sheet.getSheetName());
-                for (Row row : sheet) {
-                    List<String> cells = new ArrayList<>();
-                    for (Cell cell : row) {
-                        switch (cell.getCellType()) {
-                            case STRING:
-                                cells.add(cell.getStringCellValue());
-                                break;
-                            case NUMERIC:
-                                cells.add(String.valueOf(cell.getNumericCellValue()));
-                                break;
-                            case BOOLEAN:
-                                cells.add(String.valueOf(cell.getBooleanCellValue()));
-                                break;
-                            case FORMULA:
-                                cells.add(cell.getCellFormula());
-                                break;
-                            default:
-                                cells.add("");
-                        }
-                    }
-                    writer.println(String.join(",", cells));
-                }
-                writer.println();
-            }
-        }
-
-        return csvFilePath.toString();
-    }
-
 }
