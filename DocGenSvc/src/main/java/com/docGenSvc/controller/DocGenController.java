@@ -1,9 +1,12 @@
 package com.docGenSvc.controller;
 import com.docGenSvc.exception.InvalidInputException;
+import com.docGenSvc.model.entity.DocGenNgStatus;
 import com.docGenSvc.model.request.DocGenData;
 import com.docGenSvc.model.response.DocumentsResponse;
 import com.docGenSvc.model.response.JobSubmitResponse;
+import com.docGenSvc.service.DocGenNgRepoService;
 import com.docGenSvc.service.DocGenNgService;
+import com.docGenSvc.utility.DocGenUtility;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -16,6 +19,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.io.File;
 import java.io.IOException;
 
 
@@ -23,8 +28,18 @@ import java.io.IOException;
 @RestController
 @Tag(name = "DocGenController")
 public class DocGenController {
+
+
     @Autowired
     private  DocGenNgService docGenNgService;
+    @Autowired
+    private DocGenNgRepoService docGenNgRepoService;
+    @Autowired
+    private DocGenUtility docGenUtility;
+
+    @Autowired
+    private  DocGenNgService docGenNgService;
+
     private static final Logger logger = LoggerFactory.getLogger(DocGenController.class);
 
 
@@ -95,5 +110,23 @@ public class DocGenController {
 
         }
 
+    }
+    @PostMapping("/saveStatus")
+    public DocGenNgStatus saveTemplateStatus(@RequestBody DocGenData docGenData){
+        String ticketNumber=docGenUtility.docNameCreator(docGenData.getQuoteId());
+        String filePath = "D:/Project/CPE_DocGen/DocGenNG/DocGenSvc/src/main/resources/files/Product.xlsx";
+        File file = new File(filePath);
+        DocGenNgStatus docGenNgStatus= new DocGenNgStatus();
+        docGenNgStatus.setFilePath(String.valueOf(file));
+        docGenNgStatus.setTicketNumber(ticketNumber);
+        docGenNgRepoService.saveFileStatus(docGenNgStatus);
+        return docGenNgStatus;
+    }
+
+    @GetMapping("/fetch")
+    public boolean getFileStatus(@RequestBody DocGenData docGenData){
+        String isReady=docGenData.getQuoteId();
+        boolean status = docGenNgService.isFileReady(isReady);
+        return status;
     }
 }

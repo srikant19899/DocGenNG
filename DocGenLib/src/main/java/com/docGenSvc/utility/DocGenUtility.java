@@ -12,17 +12,14 @@ import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.core5.util.Timeout;
-
 import java.io.IOException;
-
-import com.docGenSvc.model.entity.DocGenEntity;
+import com.docGenSvc.model.entity.DocGenNgStatus;
 import com.docGenSvc.properties.DocGenProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
 import java.io.InputStream;
 import java.net.SocketTimeoutException;
 import java.time.LocalDateTime;
@@ -35,7 +32,7 @@ import java.util.Map;
 public class DocGenUtility {
     private static final Logger logger = LoggerFactory.getLogger(DocGenUtility.class);
 
-    private List<DocGenEntity> dbData = new ArrayList<>();
+    private List<DocGenNgStatus> dbData = new ArrayList<>();
     @Autowired
     private DocGenProperties docGenProperties;
     private ObjectMapper objectMapper = new ObjectMapper();
@@ -82,19 +79,18 @@ public class DocGenUtility {
         }
     }
 
-    public void addDocumentStatus(String requestId, String ticketNumber) {
-        DocGenEntity docGenEntity = new DocGenEntity();
-        docGenEntity.setReady(false);
-        docGenEntity.setRequestId(requestId);
-        docGenEntity.setTicketNumber(ticketNumber);
-        dbData.add(docGenEntity);
+    public void addDocumentStatus(String requestId, String ticketNumber){
+        DocGenNgStatus docGenNgStatus = new DocGenNgStatus();
+        docGenNgStatus.setReady(false);
+        docGenNgStatus.setRequestId(requestId);
+        docGenNgStatus.setTicketNumber(ticketNumber);
+        dbData.add(docGenNgStatus);
         logger.info("DB status before completing file{}", dbData);
 
     }
-
-    public boolean checkDuplicateRequest(String requestId) {
-        for (DocGenEntity db : dbData) {
-            if (db.getRequestId().equals(requestId)) {
+    public boolean checkDuplicateRequest(String requestId){
+        for(DocGenNgStatus db: dbData){
+            if(db.getRequestId().equals(requestId)) {
                 return true;
             }
         }
