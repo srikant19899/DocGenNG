@@ -1,4 +1,5 @@
 package com.docGenSvc.controller;
+import com.docGenSvc.exception.DocGenNGException;
 import com.docGenSvc.exception.InvalidInputException;
 import com.docGenSvc.model.entity.DocGenNgStatus;
 import com.docGenSvc.model.request.DocGenData;
@@ -37,8 +38,6 @@ public class DocGenController {
     @Autowired
     private DocGenUtility docGenUtility;
 
-    @Autowired
-    private  DocGenNgService docGenNgService;
 
     private static final Logger logger = LoggerFactory.getLogger(DocGenController.class);
 
@@ -76,17 +75,17 @@ public class DocGenController {
     @PostMapping("/documents")
     public ResponseEntity<Object> submit(  @RequestBody  DocGenData request,
                                           @RequestHeader(name = "requestId") String requestId,
-                                          @RequestHeader(name = "trace", required = false) String trace ) throws Exception {
+                                          @RequestHeader(name = "trace", required = false) String trace )  {
 
         try {
             String fileId = docGenNgService.processFile(requestId, trace, request);
             return ResponseEntity.status(HttpStatus.OK).body(new DocumentsResponse(fileId));
-        }  catch (InvalidInputException | IOException | InterruptedException e) {
+        }  catch (InvalidInputException  e) {
             logger.error("InvalidInputException occurred: {}", e.getMessage());
-            throw new InvalidInputException( e.getMessage());
+            throw new InvalidInputException(e, e.getMessage(),"400.00.1000");
         }catch (Exception e) {
             logger.error("IOException occurred: {}", e.getMessage());
-            throw new Exception(e.getMessage());
+            throw new DocGenNGException(e,e.getMessage(),"500.00.1000");
            }
 
     }
@@ -113,7 +112,7 @@ public class DocGenController {
     }
     @PostMapping("/saveStatus")
     public DocGenNgStatus saveTemplateStatus(@RequestBody DocGenData docGenData){
-        String ticketNumber=docGenUtility.docNameCreator(docGenData.getQuoteId());
+        String ticketNumber=docGenUtility.ticketGenerator(docGenData.getQuoteId());
         String filePath = "D:/Project/CPE_DocGen/DocGenNG/DocGenSvc/src/main/resources/files/Product.xlsx";
         File file = new File(filePath);
         DocGenNgStatus docGenNgStatus= new DocGenNgStatus();
@@ -121,7 +120,7 @@ public class DocGenController {
         docGenNgStatus.setTicketNumber(ticketNumber);
         docGenNgRepoService.saveFileStatus(docGenNgStatus);
         return docGenNgStatus;
-    }
+    }// this is in
 
     @GetMapping("/fetch")
     public boolean getFileStatus(@RequestBody DocGenData docGenData){

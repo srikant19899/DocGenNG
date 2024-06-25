@@ -15,27 +15,31 @@ import  java.util.Arrays;
 @ControllerAdvice
 public class DocGenNGExceptionHandler {
     @ExceptionHandler(InvalidInputException.class)
-    public ResponseEntity<Object> handleInvalidInputException(InvalidInputException e) {
-        return exceptionResponse(e, HttpStatus.BAD_REQUEST);
+    public ResponseEntity<Object> handleInvalidInputExceptionHandler(InvalidInputException e) {
+        return exceptionResponse(e.getErrorCode(),e.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> handleException(Exception e) {
-       return exceptionResponse(e,HttpStatus.INTERNAL_SERVER_ERROR);
+       return exceptionResponse("500.00.1000",e.getMessage(),HttpStatus.INTERNAL_SERVER_ERROR);
 
     }
     @ExceptionHandler(QuoteXException.class)
-    public ResponseEntity<Object> quateXException(QuoteXException e){
-        return exceptionResponse(e, HttpStatus.INTERNAL_SERVER_ERROR);
+    public ResponseEntity<Object> quoteXExceptionHandler(QuoteXException e){
+        return exceptionResponse(e.getErrorCode(),e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+    @ExceptionHandler(DocumentProcessingException.class)
+    public ResponseEntity<Object> documentProcessingExceptionHandler(DocumentProcessingException e){
+        return exceptionResponse(e.getErrorCode(),e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    @ExceptionHandler(IOException.class)
-    public ResponseEntity<Object> ioExceptionHanler(IOException e){
-        return exceptionResponse(e, HttpStatus.INTERNAL_SERVER_ERROR);
+    @ExceptionHandler(DocGenNGException.class) // docGenNGExcp -> e, msg, errorcode
+    public ResponseEntity<Object> docGenNGExceptionHandler(DocGenNGException e){// fixed here and pass
+        return exceptionResponse(e.getErrorCode(),e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
-    private ResponseEntity<Object> exceptionResponse(Exception e, HttpStatusCode code){
+    private ResponseEntity<Object> exceptionResponse(String errorCode, String message, HttpStatusCode code){
         JobSubmitResponse errorResponse = new JobSubmitResponse(
-                Arrays.asList(new Errors(code.toString(), e.getMessage())),
+                Arrays.asList(new Errors(errorCode, message)),
                 ""
         );
         return new ResponseEntity<>(errorResponse, code);
