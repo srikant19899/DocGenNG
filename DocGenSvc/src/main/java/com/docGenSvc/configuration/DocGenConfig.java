@@ -1,4 +1,5 @@
 package com.docGenSvc.configuration;
+
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
@@ -8,7 +9,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 
 
 @Configuration
-@EnableAsync(proxyTargetClass=true)
+@EnableAsync(proxyTargetClass = true)
 public class DocGenConfig {
 
     @Bean

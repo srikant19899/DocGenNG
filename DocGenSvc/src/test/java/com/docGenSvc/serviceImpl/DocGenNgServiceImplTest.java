@@ -46,15 +46,12 @@ class DocGenNgServiceImplTest {
         when(docGenUtility.ticketGenerator(anyString())).thenReturn("ticket123");
         doNothing().when(docGenUtility).validateRequest(any());
         doNothing().when(docGenUtility).addDocumentStatus(anyString(), anyString());
-
         String ticketNumber = docGenNgServiceImpl.processFile("request123", "trace123", request);
-
         assertEquals("ticket123", ticketNumber);
         verify(docGenUtility).validateRequest(any());
         verify(docGenUtility).addDocumentStatus(anyString(), anyString());
         verify(docGenUtility).ticketGenerator(anyString());
     }
-
     @Test
     void testGenerateFile() throws Exception {
         QuoteXWrapper quoteXWrapper = new QuoteXWrapper();
@@ -62,9 +59,7 @@ class DocGenNgServiceImplTest {
         when(docGenUtility.copyTemplate(anyString())).thenReturn(new File("testTemplate.xlsx"));
         when(docGenProperties.getTemplateFile()).thenReturn("template.xlsx");
         when(docGenProperties.getDocGenLag()).thenReturn(1000);
-
         CompletableFuture<Void> future = docGenNgServiceImpl.generateFile("file123", "request123", request);
-
         future.get();
         verify(docGenUtility).getQuoteXData(any());
         verify(docGenUtility).copyTemplate(anyString());

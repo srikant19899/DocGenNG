@@ -27,7 +27,7 @@ public class JpaConfig {
     }
 
     @Bean
-    public DataSource dataSource(){
+    public DataSource dataSource() {
         DataSourceBuilder dataSourceBuilder = DataSourceBuilder.create();
         dataSourceBuilder.driverClassName("org.postgresql.Driver");
         dataSourceBuilder.url("jdbc:postgresql://localhost:5432/DogGenNGDB");
@@ -36,7 +36,7 @@ public class JpaConfig {
         return (DataSource) dataSourceBuilder.build();
     }
 
-    private Properties jpaProperties(){
+    private Properties jpaProperties() {
         Properties properties = new Properties();
         properties.setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
         properties.setProperty("hibernate.hbm2ddl.auto", "update");

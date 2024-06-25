@@ -110,22 +110,5 @@ public class DocGenController {
         }
 
     }
-    @PostMapping("/saveStatus")
-    public DocGenNgStatus saveTemplateStatus(@RequestBody DocGenData docGenData){
-        String ticketNumber=docGenUtility.ticketGenerator(docGenData.getQuoteId());
-        String filePath = "D:/Project/CPE_DocGen/DocGenNG/DocGenSvc/src/main/resources/files/Product.xlsx";
-        File file = new File(filePath);
-        DocGenNgStatus docGenNgStatus= new DocGenNgStatus();
-        docGenNgStatus.setFilePath(String.valueOf(file));
-        docGenNgStatus.setTicketNumber(ticketNumber);
-        docGenNgRepoService.saveFileStatus(docGenNgStatus);
-        return docGenNgStatus;
-    }// this is in
 
-    @GetMapping("/fetch")
-    public boolean getFileStatus(@RequestBody DocGenData docGenData){
-        String isReady=docGenData.getQuoteId();
-        boolean status = docGenNgService.isFileReady(isReady);
-        return status;
-    }
 }

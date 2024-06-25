@@ -6,6 +6,7 @@ import com.docGenSvc.exception.InvalidInputException;
 import com.docGenSvc.exception.QuoteXException;
 import com.docGenSvc.model.quoteXWrapper.QuoteXWrapper;
 import com.docGenSvc.model.request.DocGenData;
+import com.docGenSvc.repository.DocGenNgRepository;
 import com.fasterxml.jackson.core.JsonParser;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
@@ -32,25 +33,23 @@ import org.springframework.stereotype.Component;
 import java.net.SocketTimeoutException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Component
 public class DocGenUtility {
     private static final Logger logger = LoggerFactory.getLogger(DocGenUtility.class);
 
-    private List<DocGenNgStatus> dbData = new ArrayList<>();
     @Autowired
     private DocGenProperties docGenProperties;
+    @Autowired
+    private DocGenNgRepository docGenNgRepository;
+
     private ObjectMapper objectMapper = new ObjectMapper();
     private String sheetNameToDelete = "PIVOT";
 
 
     public String ticketGenerator(String quoteId) {
         LocalDateTime localDateTime = LocalDateTime.now();
-        // Format LocalDateTime to a string with a separator
         String formattedDateTime = localDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss"));
         System.out.println(quoteId + "-" + formattedDateTime);
         return quoteId + "-" + formattedDateTime;
@@ -58,7 +57,6 @@ public class DocGenUtility {
 
     public String docNameGenerator(String requestId){
         LocalDateTime localDateTime = LocalDateTime.now();
-        // Format LocalDateTime to a string with a separator
         String formattedDateTime = localDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss"));
         return requestId + "-" + formattedDateTime+".xlsx";
     }
@@ -66,7 +64,6 @@ public class DocGenUtility {
     public Object getQuoteXData(DocGenData docGenData) {
         String serviceUrl = docGenProperties.getUrl();
         int timeout = docGenProperties.getTimeout();
-//        add audit and info log here
         try {
             RequestConfig requestConfig = RequestConfig.custom()
                     .setConnectTimeout(Timeout.ofMilliseconds(timeout))
@@ -101,22 +98,22 @@ public class DocGenUtility {
         docGenNgStatus.setReady(false);
         docGenNgStatus.setRequestId(requestId);
         docGenNgStatus.setTicketNumber(ticketNumber);
-        dbData.add(docGenNgStatus);
-        logger.info("DB status before completing file{}", dbData);
-
+        docGenNgRepository.save(docGenNgStatus);
     }
     public boolean checkDuplicateRequest(String requestId){
-        for(DocGenNgStatus db: dbData){
-            if(db.getRequestId().equals(requestId)) {
-                return true;
-            }
-        }
-        return false;
+        DocGenNgStatus docGenNgStatus=docGenNgRepository.findById(requestId).orElse(null);
+        return Objects.nonNull(docGenNgStatus);
     }
 
-    public void updateDocumentStatus(String requestId) {
-        dbData.stream().filter(x -> x.getRequestId().equals(requestId)).forEach(x -> x.setReady(true));
-        logger.info("DB status after completing file{}", dbData);
+    public void updateDocumentStatus(String requestId, String path) {
+        DocGenNgStatus docGenNgStatus = docGenNgRepository.findById(requestId).orElse(null);
+        if(Objects.nonNull(docGenNgStatus)){
+            docGenNgStatus.setReady(true);
+            docGenNgStatus.setFilePath(path);
+        }
+        if(docGenNgStatus.isReady()){
+            docGenNgRepository.save(docGenNgStatus);
+        }
     }
 
     public void validateRequest(DocGenData docGenData) {

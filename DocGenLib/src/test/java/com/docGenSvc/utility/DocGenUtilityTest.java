@@ -1,23 +1,34 @@
 package com.docGenSvc.utility;
 
 
+import com.docGenSvc.exception.DocGenNGException;
 import com.docGenSvc.exception.InvalidInputException;
 import com.docGenSvc.model.request.DocGenData;
 import com.docGenSvc.properties.DocGenProperties;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.io.ClassPathResource;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class DocGenUtilityTest {
 
     @Mock
     private DocGenProperties docGenProperties;
+    @Mock
+    private ObjectMapper objectMapper;
 
     @InjectMocks
     private DocGenUtility docGenUtility;
@@ -83,5 +94,24 @@ class DocGenUtilityTest {
         InvalidInputException exception = assertThrows(InvalidInputException.class, () -> docGenUtility.validateRequest(request));
         assertEquals("docType maximum length should be 50", exception.getMessage());
     }
+
+//    @Test
+//    public void testCopyTemplate_Success() throws IOException {
+//        when(docGenProperties.getTemplateFile()).thenReturn("template.xlsx");
+//        ClassPathResource resource = new ClassPathResource("template.xlsx");
+//        InputStream fis = resource.getInputStream();
+//        when(docGenUtility.copyTemplate("template.xlsx")).thenReturn(new File("copiedTemplate.xlsx"));
+//
+//        File copiedFile = docGenUtility.copyTemplate("template.xlsx");
+//        assertNotNull(copiedFile);
+//        assertTrue(copiedFile.exists());
+//    }
+    @Test
+    public void testCopyTemplate_Failure() {
+        assertThrows(DocGenNGException.class, () -> {
+            docGenUtility.copyTemplate("invalidTemplateFile");
+        });
+    }
+
 
 }
